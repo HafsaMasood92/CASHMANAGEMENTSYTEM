@@ -1,0 +1,304 @@
+
+@{
+    ViewData["Title"] = "Bank Accounts";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Bank Accounts</h1>
+        <p>Manage cash and bank accounts used across your organization.</p>
+    </div>
+
+    <button type="button" class="btn btn-primary" onclick="openAccountForm()">
+        + Add Account
+    </button>
+</div>
+
+<section class="summary-grid">
+    <article class="summary-card">
+        <div class="summary-card-top">
+            <span>Total Accounts</span>
+            <span class="summary-icon">▣</span>
+        </div>
+        <h2 id="totalAccounts">1</h2>
+        <p>Cash and bank accounts</p>
+    </article>
+
+    <article class="summary-card">
+        <div class="summary-card-top">
+            <span>Total Balance</span>
+            <span class="summary-icon">₨</span>
+        </div>
+        <h2 id="totalBalance">Rs. 0</h2>
+        <p>Combined opening balances</p>
+    </article>
+
+    <article class="summary-card">
+        <div class="summary-card-top">
+            <span>Bank Accounts</span>
+            <span class="summary-icon">▤</span>
+        </div>
+        <h2 id="bankAccountCount">0</h2>
+        <p>Registered bank accounts</p>
+    </article>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h3>Accounts overview</h3>
+            <p>Review account details and opening balances.</p>
+        </div>
+    </div>
+
+    <div class="transaction-toolbar">
+        <input id="accountSearch" class="form-control" type="search"
+               placeholder="Search account or bank..." />
+
+        <select id="accountTypeFilter" class="form-select">
+            <option value="all">All account types</option>
+            <option value="Cash">Cash</option>
+            <option value="Bank">Bank</option>
+        </select>
+
+        <select id="accountStatusFilter" class="form-select">
+            <option value="all">All statuses</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+        </select>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Account</th>
+                    <th>Bank / Institution</th>
+                    <th>Account number</th>
+                    <th>Type</th>
+                    <th class="text-end">Opening balance</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="accountRows"></tbody>
+        </table>
+    </div>
+
+    <p class="preview-note">
+        Preview only: account details are held temporarily in the browser.
+        Current balances will be connected to transactions during backend development.
+    </p>
+</section>
+
+<div id="accountModal" class="transaction-modal" hidden>
+    <form id="accountForm" class="transaction-form">
+        <div class="form-heading">
+            <div>
+                <h2>Add Account</h2>
+                <p>Register a cash or bank account.</p>
+            </div>
+            <button type="button" class="close-button"
+                    aria-label="Close form" onclick="closeAccountForm()">×</button>
+        </div>
+
+        <label for="accountName">Account name</label>
+        <input id="accountName" class="form-control" required maxlength="100"
+               placeholder="e.g. Main Office Cash" />
+
+        <label for="accountType">Account type</label>
+        <select id="accountType" class="form-select" required>
+            <option value="Cash">Cash</option>
+            <option value="Bank">Bank</option>
+        </select>
+
+        <div id="bankFields">
+            <label for="bankName">Bank / institution</label>
+            <input id="bankName" class="form-control" maxlength="100"
+                   placeholder="e.g. Bank name" />
+
+            <label for="accountNumber">Account number (optional)</label>
+            <input id="accountNumber" class="form-control" maxlength="40"
+                   placeholder="Enter account number" />
+        </div>
+
+        <label for="openingBalance">Opening balance (PKR)</label>
+        <input id="openingBalance" class="form-control" type="number"
+               min="0" step="0.01" value="0" required />
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-outline-secondary"
+                    onclick="closeAccountForm()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Account</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        const accounts = [
+            {
+                id: 1,
+                name: "Main Cash",
+                type: "Cash",
+                bank: "—",
+                number: "—",
+                openingBalance: 0,
+                active: true
+            }
+        ];
+
+        let nextAccountId = 2;
+
+        const accountMoneyFormat = new Intl.NumberFormat("en-PK", {
+            maximumFractionDigits: 2
+        });
+
+        function formatAccountMoney(amount) {
+            return "Rs. " + accountMoneyFormat.format(amount);
+        }
+
+        function escapeAccountHtml(value) {
+            return String(value).replace(/[&<>"']/g, character => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            })[character]);
+        }
+
+        function openAccountForm() {
+            document.getElementById("accountModal").hidden = false;
+            updateBankFields();
+            document.getElementById("accountName").focus();
+        }
+
+        function closeAccountForm() {
+            document.getElementById("accountModal").hidden = true;
+        }
+
+        function updateBankFields() {
+            const isBank = document.getElementById("accountType").value === "Bank";
+            document.getElementById("bankFields").hidden = !isBank;
+            document.getElementById("bankName").required = isBank;
+        }
+
+        document.getElementById("accountType").addEventListener("change", updateBankFields);
+
+        document.getElementById("accountForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const type = document.getElementById("accountType").value;
+            const name = document.getElementById("accountName").value.trim();
+            const bank = document.getElementById("bankName").value.trim();
+            const number = document.getElementById("accountNumber").value.trim();
+            const openingBalance = Number(document.getElementById("openingBalance").value);
+
+            if (!name || !Number.isFinite(openingBalance) || openingBalance < 0) {
+                alert("Enter a valid account name and opening balance.");
+                return;
+            }
+
+            if (type === "Bank" && !bank) {
+                alert("Please enter the bank or institution name.");
+                return;
+            }
+
+            accounts.push({
+                id: nextAccountId++,
+                name,
+                type,
+                bank: type === "Bank" ? bank : "—",
+                number: type === "Bank" && number ? number : "—",
+                openingBalance,
+                active: true
+            });
+
+            this.reset();
+            document.getElementById("openingBalance").value = "0";
+            document.getElementById("accountType").value = "Cash";
+            updateBankFields();
+            closeAccountForm();
+            renderAccounts();
+        });
+
+        function toggleAccountStatus(id) {
+            const account = accounts.find(item => item.id === id);
+            if (!account) return;
+
+            account.active = !account.active;
+            renderAccounts();
+        }
+
+        function renderAccounts() {
+            const search = document.getElementById("accountSearch")
+                .value.trim().toLowerCase();
+            const typeFilter = document.getElementById("accountTypeFilter").value;
+            const statusFilter = document.getElementById("accountStatusFilter").value;
+
+            const filtered = accounts.filter(account => {
+                const status = account.active ? "Active" : "Inactive";
+                const matchesSearch =
+                    account.name.toLowerCase().includes(search) ||
+                    account.bank.toLowerCase().includes(search);
+
+                return matchesSearch &&
+                    (typeFilter === "all" || account.type === typeFilter) &&
+                    (statusFilter === "all" || status === statusFilter);
+            });
+
+            const rows = document.getElementById("accountRows");
+
+            rows.innerHTML = filtered.length
+                ? filtered.map(account => `
+                    <tr>
+                        <td><strong>${escapeAccountHtml(account.name)}</strong></td>
+                        <td>${escapeAccountHtml(account.bank)}</td>
+                        <td>${escapeAccountHtml(account.number)}</td>
+                        <td>${escapeAccountHtml(account.type)}</td>
+                        <td class="text-end">${formatAccountMoney(account.openingBalance)}</td>
+                        <td>
+                            <span class="status-badge ${account.active ? "status-paid" : "status-pending"}">
+                                ${account.active ? "Active" : "Inactive"}
+                            </span>
+                        </td>
+                        <td>
+                            <button type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                onclick="toggleAccountStatus(${account.id})">
+                                ${account.active ? "Deactivate" : "Activate"}
+                            </button>
+                        </td>
+                    </tr>
+                `).join("")
+                : `<tr><td colspan="7" class="text-center py-5">
+                    No accounts match your search.
+                   </td></tr>`;
+
+            document.getElementById("totalAccounts").textContent = accounts.length;
+            document.getElementById("totalBalance").textContent =
+                formatAccountMoney(accounts.reduce((sum, account) =>
+                    sum + account.openingBalance, 0));
+            document.getElementById("bankAccountCount").textContent =
+                accounts.filter(account => account.type === "Bank").length;
+        }
+
+        ["accountSearch", "accountTypeFilter", "accountStatusFilter"].forEach(id => {
+            const element = document.getElementById(id);
+            element.addEventListener("input", renderAccounts);
+            element.addEventListener("change", renderAccounts);
+        });
+
+        document.getElementById("accountModal").addEventListener("click", function (event) {
+            if (event.target === this) closeAccountForm();
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") closeAccountForm();
+        });
+
+        updateBankFields();
+        renderAccounts();
+    </script>
+}

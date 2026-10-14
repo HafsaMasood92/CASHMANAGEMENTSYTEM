@@ -1,0 +1,701 @@
+﻿
+@{
+    ViewData["Title"] = "Overview";
+
+    var loggedInName = User.Identity?.Name;
+    var displayName = string.IsNullOrWhiteSpace(loggedInName)
+        ? "Owner"
+        : loggedInName.Split('@')[0];
+}
+
+<div class="page-header welcome-header">
+    <div>
+        <span class="welcome-eyebrow">YOUR FINANCIAL WORKSPACE</span>
+        <h1>Welcome back, @displayName! 👋</h1>
+        <p>Here's what's happening across your organization today.</p>
+    </div>
+    <span class="demo-status">LOGIN</span>
+</div>
+
+<div class="dashboard-toolbar">
+    <div>
+        <label for="reportPeriod">Reporting period</label>
+        <select id="reportPeriod" class="form-select">
+            <option value="month">This month</option>
+            <option value="lastMonth">Last month</option>
+            <option value="year">This year</option>
+            <option value="all">All time</option>
+        </select>
+    </div>
+
+    <div>
+        <label for="unitFilter">Organizational unit</label>
+        <select id="unitFilter" class="form-select">
+            <option value="all">All units</option>
+            <option value="school">School</option>
+            <option value="college">College</option>
+            <option value="bs">BS Program</option>
+            <option value="training">Training Center</option>
+            <option value="academy">Evening Academy</option>
+        </select>
+    </div>
+
+    <div class="dashboard-updated">
+        <span class="status-dot"></span>
+        Illustrative figures
+    </div>
+</div>
+
+<section class="summary-grid">
+    <article class="summary-card">
+        <div class="summary-card-top">
+            <span>Period Revenue</span>
+            <span class="summary-icon revenue-icon">↗</span>
+        </div>
+        <h2 id="revenueValue">Rs. 0</h2>
+        <p>Money received in the selected period</p>
+    </article>
+
+    <article class="summary-card">
+        <div class="summary-card-top">
+            <span>Period Expenses</span>
+            <span class="summary-icon expense-icon">↘</span>
+        </div>
+        <h2 id="expenseValue">Rs. 0</h2>
+        <p>Recorded spending in the selected period</p>
+    </article>
+
+    <article class="summary-card">
+        <div class="summary-card-top">
+            <span>All-Time Net Balance</span>
+            <span class="summary-icon balance-icon">＝</span>
+        </div>
+        <h2 id="balanceValue">Rs. 0</h2>
+        <p>All-time revenue minus expenses</p>
+    </article>
+
+    <article class="summary-card">
+        <div class="summary-card-top">
+            <span>Outstanding Bills</span>
+            <span class="summary-icon bills-icon">▤</span>
+        </div>
+        <h2 id="billsValue">Rs. 0</h2>
+        <p>Remaining unpaid amount, including overdue bills</p>
+    </article>
+</section>
+
+<div class="dashboard-grid">
+    <section class="panel">
+        <div class="panel-header">
+            <div>
+                <h3>Cash Flow</h3>
+                <p id="chartSubtitle">Monthly revenue compared with expenses</p>
+            </div>
+        </div>
+
+        <div class="cashflow-legend">
+            <span><i class="legend-dot revenue-dot"></i> Revenue</span>
+            <span><i class="legend-dot expense-dot"></i> Expenses</span>
+        </div>
+
+        <div class="cashflow-chart" id="cashflowChart"
+             role="img" aria-label="Monthly revenue and expenses chart"></div>
+
+        <p class="chart-footnote">
+            Illustrative figures for demonstration only.
+        </p>
+    </section>
+
+    <section class="panel">
+        <div class="panel-header">
+            <div>
+                <h3>Needs Attention</h3>
+                <p>Items requiring owner review</p>
+            </div>
+        </div>
+
+        <a asp-controller="Notifications" asp-action="Index"
+           class="action-item dashboard-action">
+            <div class="action-icon">⌫</div>
+            <div class="action-details">
+                <strong>Deletion requests</strong>
+                <p><span id="deletionCount">2</span> pending requests to review</p>
+            </div>
+            <span class="action-arrow">→</span>
+        </a>
+
+        <a asp-controller="Bills" asp-action="Index"
+           class="action-item dashboard-action">
+            <div class="action-icon overdue-icon">◷</div>
+            <div class="action-details">
+                <strong>Overdue bills</strong>
+                <p><span id="overdueCount">3</span> bills past their due date</p>
+            </div>
+            <span class="action-arrow">→</span>
+        </a>
+
+        <a asp-controller="Notifications" asp-action="Index"
+           class="panel-link">Open notification center →</a>
+    </section>
+</div>
+
+<section class="panel unit-panel">
+    <div class="panel-header">
+        <div>
+            <h3>Unit Performance</h3>
+            <p>Compare financial activity across organizational units</p>
+        </div>
+
+        <a asp-controller="Units" asp-action="Index"
+           class="panel-link">Manage units →</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table align-middle dashboard-table">
+            <thead>
+                <tr>
+                    <th>ORGANIZATIONAL UNIT</th>
+                    <th>REVENUE</th>
+                    <th>EXPENSES</th>
+                    <th>NET BALANCE</th>
+                </tr>
+            </thead>
+            <tbody id="unitPerformanceBody"></tbody>
+            <tfoot>
+                <tr>
+                    <th>Visible total</th>
+                    <th id="totalRevenue">Rs. 0</th>
+                    <th id="totalExpenses">Rs. 0</th>
+                    <th id="totalBalance">Rs. 0</th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <p class="chart-footnote">
+        The table follows the selected reporting period and unit filter.
+    </p>
+</section>
+
+<style>
+    /* Welcome */
+    .welcome-header {
+        animation: welcomeAppear .65s ease both;
+    }
+
+    .welcome-eyebrow {
+        display: inline-block;
+        margin-bottom: 8px;
+        color: #4779df;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 1.8px;
+    }
+
+    .demo-status {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 10px;
+        border: 1px solid #e8d9ae;
+        border-radius: 20px;
+        background: #fff8e7;
+        color: #896516;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .5px;
+        white-space: nowrap;
+    }
+
+    .dashboard-updated {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        align-self: end;
+        padding-bottom: 10px;
+        color: #64748b;
+        font-size: 12px;
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #d9a441;
+    }
+
+    /* Summary cards */
+    .summary-card {
+        position: relative;
+        overflow: hidden;
+        cursor: default;
+        transition: transform .28s ease, box-shadow .28s ease,
+                    border-color .28s ease;
+        animation: cardAppear .55s ease both;
+    }
+
+    .summary-card:nth-child(2) {
+        animation-delay: .08s;
+    }
+
+    .summary-card:nth-child(3) {
+        animation-delay: .16s;
+    }
+
+    .summary-card:nth-child(4) {
+        animation-delay: .24s;
+    }
+
+    .summary-card:hover {
+        transform: translateY(-7px) rotate(-.5deg);
+        box-shadow: 0 14px 30px rgba(36, 63, 110, .13);
+        border-color: #b9cdf8;
+    }
+
+    .summary-card-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .summary-icon {
+        display: inline-flex;
+        width: 36px;
+        height: 36px;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        border-radius: 10px;
+        font-size: 20px;
+        transition: transform .3s ease;
+    }
+
+    .summary-card:hover .summary-icon {
+        transform: scale(1.13) rotate(-8deg);
+    }
+
+    .revenue-icon {
+        background: #e6f7ef;
+        color: #17865b;
+    }
+
+    .expense-icon {
+        background: #fff0ed;
+        color: #d35d49;
+    }
+
+    .balance-icon {
+        background: #eaf1ff;
+        color: #3568c8;
+    }
+
+    .bills-icon {
+        background: #fff5df;
+        color: #ad7818;
+    }
+
+    /* Panels */
+    .panel {
+        transition: box-shadow .25s ease, transform .25s ease;
+    }
+
+    .panel:hover {
+        box-shadow: 0 9px 25px rgba(36, 63, 110, .07);
+    }
+
+    /* Cash-flow chart */
+    .cashflow-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+        margin: 8px 0 18px;
+        color: #64748b;
+        font-size: 12px;
+    }
+
+    .cashflow-legend span {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .legend-dot {
+        display: inline-block;
+        width: 9px;
+        height: 9px;
+        border-radius: 3px;
+    }
+
+    .revenue-dot {
+        background: #4779df;
+    }
+
+    .expense-dot {
+        background: #e8a36c;
+    }
+
+    .cashflow-chart {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 12px;
+        min-height: 210px;
+        align-items: end;
+        padding: 16px 4px 0;
+        border-bottom: 1px solid #e7ebf2;
+        background: repeating-linear-gradient(
+            to top,
+            transparent 0,
+            transparent 49px,
+            #edf0f5 50px
+        );
+    }
+
+    .chart-month {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: end;
+        min-width: 0;
+        height: 100%;
+    }
+
+    .chart-bars {
+        display: flex;
+        align-items: end;
+        justify-content: center;
+        gap: 5px;
+        width: 100%;
+        height: 165px;
+    }
+
+    .chart-bar {
+        width: min(30%, 22px);
+        min-height: 3px;
+        border-radius: 5px 5px 0 0;
+        transition: height .3s ease, filter .2s ease;
+    }
+
+    .chart-bar:hover {
+        filter: brightness(.88);
+    }
+
+    .revenue-bar {
+        background: #4779df;
+    }
+
+    .expense-bar {
+        background: #e8a36c;
+    }
+
+    .chart-month-label {
+        padding: 9px 0;
+        color: #64748b;
+        font-size: 11px;
+    }
+
+    .chart-footnote {
+        margin: 12px 0 0;
+        color: #94a3b8;
+        font-size: 11px;
+    }
+
+    /* Action links */
+    .dashboard-action {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 15px 0;
+        color: inherit;
+        text-decoration: none;
+        border-bottom: 1px solid #edf0f5;
+        transition: background-color .22s ease, padding-left .22s ease;
+    }
+
+    .dashboard-action:last-of-type {
+        border-bottom: none;
+    }
+
+    .dashboard-action:hover {
+        padding-left: 10px;
+        background-color: #f6f9ff;
+    }
+
+    .dashboard-action:hover .action-details strong {
+        color: #3568c8;
+    }
+
+    .action-arrow {
+        margin-left: auto;
+        color: #94a3b8;
+        transition: transform .22s ease;
+    }
+
+    .dashboard-action:hover .action-arrow {
+        transform: translateX(5px);
+    }
+
+    .overdue-icon {
+        color: #c15b42;
+    }
+
+    /* Unit table */
+    .dashboard-table th {
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .dashboard-table td {
+        font-size: 13px;
+    }
+
+    .dashboard-table tbody tr {
+        transition: background-color .2s ease;
+    }
+
+    .dashboard-table tbody tr:hover {
+        background-color: #f3f7ff;
+    }
+
+    .dashboard-table tfoot {
+        background: #f8fafc;
+        font-weight: 700;
+    }
+
+    .dashboard-table tfoot th {
+        color: #334155;
+        font-size: 12px;
+    }
+
+    .positive-balance {
+        color: #16835c;
+        font-weight: 600;
+    }
+
+    .negative-balance {
+        color: #c2413b;
+        font-weight: 600;
+    }
+
+    /* Entrance animations */
+    @@keyframes welcomeAppear {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes cardAppear {
+        from {
+            opacity: 0;
+            transform: translateY(14px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@media (max-width: 850px) {
+        .dashboard-toolbar {
+            flex-wrap: wrap;
+        }
+
+        .dashboard-updated {
+            align-self: center;
+            padding-bottom: 0;
+        }
+    }
+
+    @@media (max-width: 520px) {
+        .cashflow-chart {
+            gap: 4px;
+        }
+
+        .chart-bars {
+            gap: 3px;
+        }
+
+        .chart-month-label {
+            font-size: 10px;
+        }
+
+        .demo-status {
+            font-size: 9px;
+        }
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+        .welcome-header,
+        .summary-card {
+            animation: none;
+        }
+
+        .summary-card,
+        .panel,
+        .dashboard-action,
+        .action-arrow,
+        .summary-card .summary-icon,
+        .chart-bar {
+            transition: none;
+        }
+    }
+</style>
+
+@section Scripts {
+<script>
+(() => {
+    // Frontend-only illustrative data. No database connection yet.
+    const units = [
+        { id: "school", name: "School", revenue: 680000, expenses: 415000, bills: 62000 },
+        { id: "college", name: "College", revenue: 520000, expenses: 340000, bills: 48000 },
+        { id: "bs", name: "BS Program", revenue: 760000, expenses: 495000, bills: 85000 },
+        { id: "training", name: "Training Center", revenue: 285000, expenses: 172000, bills: 26000 },
+        { id: "academy", name: "Evening Academy", revenue: 195000, expenses: 118000, bills: 19000 }
+    ];
+
+    const periodMultipliers = {
+        month: 1,
+        lastMonth: 0.88,
+        year: 8.2,
+        all: 15.6
+    };
+
+    const monthlyFlow = [
+        { month: "May", revenue: 0.76, expenses: 0.57 },
+        { month: "Jun", revenue: 0.83, expenses: 0.61 },
+        { month: "Jul", revenue: 0.71, expenses: 0.53 },
+        { month: "Aug", revenue: 0.91, expenses: 0.66 },
+        { month: "Sep", revenue: 0.87, expenses: 0.63 },
+        { month: "Oct", revenue: 1.00, expenses: 0.72 }
+    ];
+
+    const money = value =>
+        "Rs. " + Math.round(value).toLocaleString("en-PK");
+
+    const periodSelect = document.getElementById("reportPeriod");
+    const unitSelect = document.getElementById("unitFilter");
+
+    function renderChart() {
+        const chart = document.getElementById("cashflowChart");
+
+        const data = periodSelect.value === "lastMonth"
+            ? monthlyFlow.map(item => ({
+                ...item,
+                revenue: item.revenue * 0.88,
+                expenses: item.expenses * 0.88
+            }))
+            : monthlyFlow;
+
+        const maxValue = Math.max(
+            ...data.flatMap(item => [item.revenue, item.expenses])
+        );
+
+        chart.innerHTML = data.map(item => {
+            const revenueHeight = Math.max(4, item.revenue / maxValue * 150);
+            const expenseHeight = Math.max(4, item.expenses / maxValue * 150);
+
+            return `
+                <div class="chart-month">
+                    <div class="chart-bars">
+                        <div class="chart-bar revenue-bar"
+                             style="height:${revenueHeight}px"
+                             title="Revenue: ${money(item.revenue * 1000000)}"></div>
+                        <div class="chart-bar expense-bar"
+                             style="height:${expenseHeight}px"
+                             title="Expenses: ${money(item.expenses * 1000000)}"></div>
+                    </div>
+                    <span class="chart-month-label">${item.month}</span>
+                </div>`;
+        }).join("");
+    }
+
+    function renderDashboard() {
+        const period = periodSelect.value;
+        const selectedUnit = unitSelect.value;
+        const multiplier = periodMultipliers[period];
+
+        const visibleUnits = selectedUnit === "all"
+            ? units
+            : units.filter(unit => unit.id === selectedUnit);
+
+        const revenue = visibleUnits.reduce(
+            (sum, unit) => sum + unit.revenue, 0
+        );
+
+        const expenses = visibleUnits.reduce(
+            (sum, unit) => sum + unit.expenses, 0
+        );
+
+        const outstanding = visibleUnits.reduce(
+            (sum, unit) => sum + unit.bills, 0
+        );
+
+        document.getElementById("revenueValue").textContent =
+            money(revenue * multiplier);
+
+        document.getElementById("expenseValue").textContent =
+            money(expenses * multiplier);
+
+        // All-time net balance does not change with reporting period.
+        document.getElementById("balanceValue").textContent =
+            money((revenue - expenses) * periodMultipliers.all);
+
+        // Outstanding bills are a current remaining amount, not a period total.
+        document.getElementById("billsValue").textContent =
+            money(outstanding);
+
+        document.getElementById("chartSubtitle").textContent =
+            period === "all"
+                ? "Illustrative monthly revenue and expenses"
+                : period === "year"
+                    ? "Monthly trend for the selected year"
+                    : period === "lastMonth"
+                        ? "Illustrative previous-period comparison"
+                        : "Illustrative current-period comparison";
+
+        document.getElementById("unitPerformanceBody").innerHTML =
+            visibleUnits.map(unit => {
+                const unitRevenue = unit.revenue * multiplier;
+                const unitExpenses = unit.expenses * multiplier;
+                const balance = unitRevenue - unitExpenses;
+
+                const balanceClass = balance >= 0
+                    ? "positive-balance"
+                    : "negative-balance";
+
+                return `
+                    <tr>
+                        <td><strong>${unit.name}</strong></td>
+                        <td>${money(unitRevenue)}</td>
+                        <td>${money(unitExpenses)}</td>
+                        <td class="${balanceClass}">${money(balance)}</td>
+                    </tr>`;
+            }).join("");
+
+        document.getElementById("totalRevenue").textContent =
+            money(revenue * multiplier);
+
+        document.getElementById("totalExpenses").textContent =
+            money(expenses * multiplier);
+
+        document.getElementById("totalBalance").textContent =
+            money((revenue - expenses) * multiplier);
+
+        renderChart();
+    }
+
+    periodSelect.addEventListener("change", renderDashboard);
+    unitSelect.addEventListener("change", renderDashboard);
+
+    renderDashboard();
+})();
+</script>
+}

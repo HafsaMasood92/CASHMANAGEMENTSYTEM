@@ -1,0 +1,319 @@
+
+@{
+    ViewData["Title"] = "Expenses";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Expenses</h1>
+        <p>Record and review spending across your organization.</p>
+    </div>
+
+    <button type="button" class="btn btn-primary"
+            onclick="openExpenseForm()">
+        + Add Expense
+    </button>
+</div>
+
+<section class="summary-grid">
+    <article class="summary-card">
+        <div class="summary-card-top">
+            <span>Total Expenses</span>
+            <span class="summary-icon">↘</span>
+        </div>
+        <h2 id="totalExpenses">Rs. 0</h2>
+        <p>Total recorded spending</p>
+    </article>
+
+    <article class="summary-card">
+        <div class="summary-card-top">
+            <span>Expense Entries</span>
+            <span class="summary-icon">▤</span>
+        </div>
+        <h2 id="expenseCount">0</h2>
+        <p>Number of recorded entries</p>
+    </article>
+
+    <article class="summary-card">
+        <div class="summary-card-top">
+            <span>Average Expense</span>
+            <span class="summary-icon">＝</span>
+        </div>
+        <h2 id="averageExpense">Rs. 0</h2>
+        <p>Average amount per entry</p>
+    </article>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h3>Expense Entries</h3>
+            <p>Search and review spending by unit or payment account.</p>
+        </div>
+    </div>
+
+    <div class="transaction-toolbar">
+        <input id="expenseSearch"
+               type="search"
+               class="form-control"
+               placeholder="Search description or account..." />
+
+        <select id="expenseUnitFilter" class="form-select">
+            <option value="all">All units</option>
+            <option value="School">School</option>
+            <option value="College">College</option>
+            <option value="BS Program">BS Program</option>
+            <option value="Training Center">Training Center</option>
+            <option value="Evening Academy">Evening Academy</option>
+        </select>
+
+        <select id="expenseAccountFilter" class="form-select">
+            <option value="all">All accounts</option>
+            <option value="Cash">Cash</option>
+            <option value="Bank Account">Bank Account</option>
+        </select>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table align-middle transactions-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Unit</th>
+                    <th>Account</th>
+                    <th class="text-end">Amount</th>
+                </tr>
+            </thead>
+            <tbody id="expenseRows">
+                <tr>
+                    <td colspan="5" class="text-center py-5">
+                        <strong>No expense entries yet</strong>
+                        <p class="mb-0 mt-2">
+                            Add your first expense to get started.
+                        </p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <p class="preview-note">
+        Preview mode: entries are temporary and will be lost when
+        the page refreshes. Database saving will be implemented later.
+    </p>
+</section>
+
+<div id="expenseModal" class="transaction-modal" hidden>
+    <form id="expenseForm" class="transaction-form">
+        <div class="form-heading">
+            <div>
+                <h2>Add Expense</h2>
+                <p>Enter the details of an organizational expense.</p>
+            </div>
+
+            <button type="button"
+                    class="close-button"
+                    aria-label="Close form"
+                    onclick="closeExpenseForm()">
+                ×
+            </button>
+        </div>
+
+        <label for="expenseDescription">Description</label>
+        <input id="expenseDescription"
+               class="form-control"
+               required
+               maxlength="120"
+               placeholder="e.g. Electricity bill payment" />
+
+        <label for="expenseDate">Expense date</label>
+        <input id="expenseDate"
+               class="form-control"
+               type="date"
+               required />
+
+        <label for="expenseAmount">Amount (PKR)</label>
+        <input id="expenseAmount"
+               class="form-control"
+               type="number"
+               min="0.01"
+               step="0.01"
+               required
+               placeholder="Enter amount" />
+
+        <label for="expenseUnit">Organizational unit</label>
+        <select id="expenseUnit" class="form-select" required>
+            <option value="School">School</option>
+            <option value="College">College</option>
+            <option value="BS Program">BS Program</option>
+            <option value="Training Center">Training Center</option>
+            <option value="Evening Academy">Evening Academy</option>
+        </select>
+
+        <label for="expenseAccount">Payment account</label>
+        <select id="expenseAccount" class="form-select" required>
+            <option value="Cash">Cash</option>
+            <option value="Bank Account">Bank Account</option>
+        </select>
+
+        <div class="form-actions">
+            <button type="button"
+                    class="btn btn-outline-secondary"
+                    onclick="closeExpenseForm()">
+                Cancel
+            </button>
+
+            <button type="submit" class="btn btn-primary">
+                Save Expense
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        const expenseEntries = [];
+
+        const expenseMoneyFormat = new Intl.NumberFormat("en-PK", {
+            maximumFractionDigits: 2
+        });
+
+        function formatExpenseMoney(amount) {
+            return "Rs. " + expenseMoneyFormat.format(amount);
+        }
+
+        function openExpenseForm() {
+            document.getElementById("expenseModal").hidden = false;
+
+            document.getElementById("expenseDate").value =
+                new Date().toLocaleDateString("en-CA");
+
+            document.getElementById("expenseDescription").focus();
+        }
+
+        function closeExpenseForm() {
+            document.getElementById("expenseModal").hidden = true;
+        }
+
+        function escapeExpenseHtml(value) {
+            return String(value).replace(/[&<>"']/g, character => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            })[character]);
+        }
+
+        document.getElementById("expenseForm")
+            .addEventListener("submit", function (event) {
+                event.preventDefault();
+
+                const description =
+                    document.getElementById("expenseDescription")
+                        .value.trim();
+
+                const amount =
+                    Number(document.getElementById("expenseAmount").value);
+
+                if (!description || !Number.isFinite(amount) || amount <= 0) {
+                    return;
+                }
+
+                expenseEntries.push({
+                    description,
+                    date: document.getElementById("expenseDate").value,
+                    amount,
+                    unit: document.getElementById("expenseUnit").value,
+                    account: document.getElementById("expenseAccount").value
+                });
+
+                this.reset();
+                closeExpenseForm();
+                renderExpenses();
+            });
+
+        function renderExpenses() {
+            const search = document.getElementById("expenseSearch")
+                .value.trim().toLowerCase();
+
+            const unit = document.getElementById("expenseUnitFilter").value;
+            const account =
+                document.getElementById("expenseAccountFilter").value;
+
+            const filtered = expenseEntries.filter(entry =>
+                (
+                    entry.description.toLowerCase().includes(search) ||
+                    entry.account.toLowerCase().includes(search)
+                ) &&
+                (unit === "all" || entry.unit === unit) &&
+                (account === "all" || entry.account === account)
+            );
+
+            const rows = document.getElementById("expenseRows");
+
+            if (filtered.length === 0) {
+                const message = expenseEntries.length
+                    ? "No matching expense entries found."
+                    : "No expense entries yet. Add your first expense.";
+
+                rows.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            ${escapeExpenseHtml(message)}
+                        </td>
+                    </tr>`;
+            } else {
+                rows.innerHTML = filtered.map(entry => `
+                    <tr>
+                        <td>${escapeExpenseHtml(entry.date)}</td>
+                        <td>${escapeExpenseHtml(entry.description)}</td>
+                        <td>${escapeExpenseHtml(entry.unit)}</td>
+                        <td>${escapeExpenseHtml(entry.account)}</td>
+                        <td class="text-end expense-amount">
+                            − ${formatExpenseMoney(entry.amount)}
+                        </td>
+                    </tr>
+                `).join("");
+            }
+
+            const total = expenseEntries.reduce(
+                (sum, entry) => sum + entry.amount, 0
+            );
+
+            document.getElementById("totalExpenses").textContent =
+                formatExpenseMoney(total);
+
+            document.getElementById("expenseCount").textContent =
+                expenseEntries.length;
+
+            document.getElementById("averageExpense").textContent =
+                formatExpenseMoney(
+                    expenseEntries.length ? total / expenseEntries.length : 0
+                );
+        }
+
+        ["expenseSearch", "expenseUnitFilter", "expenseAccountFilter"]
+            .forEach(id => {
+                const element = document.getElementById(id);
+                element.addEventListener("input", renderExpenses);
+                element.addEventListener("change", renderExpenses);
+            });
+
+        document.getElementById("expenseModal")
+            .addEventListener("click", function (event) {
+                if (event.target === this) {
+                    closeExpenseForm();
+                }
+            });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") {
+                closeExpenseForm();
+            }
+        });
+
+        renderExpenses();
+    </script>
+}

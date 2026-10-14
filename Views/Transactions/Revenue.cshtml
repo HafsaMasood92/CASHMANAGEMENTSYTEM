@@ -1,0 +1,319 @@
+
+@{
+    ViewData["Title"] = "Revenue";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Revenue</h1>
+        <p>Record and review income received across your organization.</p>
+    </div>
+
+    <button type="button" class="btn btn-primary"
+            onclick="openRevenueForm()">
+        + Add Revenue
+    </button>
+</div>
+
+<section class="summary-grid">
+    <article class="summary-card">
+        <div class="summary-card-top">
+            <span>Total Revenue</span>
+            <span class="summary-icon">↗</span>
+        </div>
+        <h2 id="totalRevenue">Rs. 0</h2>
+        <p>Revenue recorded in this preview</p>
+    </article>
+
+    <article class="summary-card">
+        <div class="summary-card-top">
+            <span>Revenue Entries</span>
+            <span class="summary-icon">▤</span>
+        </div>
+        <h2 id="revenueCount">0</h2>
+        <p>Number of recorded entries</p>
+    </article>
+
+    <article class="summary-card">
+        <div class="summary-card-top">
+            <span>Average Revenue</span>
+            <span class="summary-icon">＝</span>
+        </div>
+        <h2 id="averageRevenue">Rs. 0</h2>
+        <p>Average amount per entry</p>
+    </article>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h3>Revenue Entries</h3>
+            <p>Search and review income by unit or payment account.</p>
+        </div>
+    </div>
+
+    <div class="transaction-toolbar">
+        <input id="revenueSearch"
+               type="search"
+               class="form-control"
+               placeholder="Search description or account..." />
+
+        <select id="revenueUnitFilter" class="form-select">
+            <option value="all">All units</option>
+            <option value="School">School</option>
+            <option value="College">College</option>
+            <option value="BS Program">BS Program</option>
+            <option value="Training Center">Training Center</option>
+            <option value="Evening Academy">Evening Academy</option>
+        </select>
+
+        <select id="revenueAccountFilter" class="form-select">
+            <option value="all">All accounts</option>
+            <option value="Cash">Cash</option>
+            <option value="Bank Account">Bank Account</option>
+        </select>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table align-middle transactions-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Unit</th>
+                    <th>Account</th>
+                    <th class="text-end">Amount</th>
+                </tr>
+            </thead>
+            <tbody id="revenueRows">
+                <tr>
+                    <td colspan="5" class="text-center py-5">
+                        <strong>No revenue entries yet</strong>
+                        <p class="mb-0 mt-2">
+                            Add your first revenue entry to get started.
+                        </p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <p class="preview-note">
+        Preview mode: entries are temporary and will be lost when
+        the page refreshes. Database saving will be implemented later.
+    </p>
+</section>
+
+<div id="revenueModal" class="transaction-modal" hidden>
+    <form id="revenueForm" class="transaction-form">
+        <div class="form-heading">
+            <div>
+                <h2>Add Revenue</h2>
+                <p>Enter the income received by your organization.</p>
+            </div>
+
+            <button type="button"
+                    class="close-button"
+                    aria-label="Close form"
+                    onclick="closeRevenueForm()">
+                ×
+            </button>
+        </div>
+
+        <label for="revenueDescription">Description</label>
+        <input id="revenueDescription"
+               class="form-control"
+               required
+               maxlength="120"
+               placeholder="e.g. Monthly fee collection" />
+
+        <label for="revenueDate">Date received</label>
+        <input id="revenueDate"
+               class="form-control"
+               type="date"
+               required />
+
+        <label for="revenueAmount">Amount (PKR)</label>
+        <input id="revenueAmount"
+               class="form-control"
+               type="number"
+               min="0.01"
+               step="0.01"
+               required
+               placeholder="Enter amount" />
+
+        <label for="revenueUnit">Organizational unit</label>
+        <select id="revenueUnit" class="form-select" required>
+            <option value="School">School</option>
+            <option value="College">College</option>
+            <option value="BS Program">BS Program</option>
+            <option value="Training Center">Training Center</option>
+            <option value="Evening Academy">Evening Academy</option>
+        </select>
+
+        <label for="revenueAccount">Payment account</label>
+        <select id="revenueAccount" class="form-select" required>
+            <option value="Cash">Cash</option>
+            <option value="Bank Account">Bank Account</option>
+        </select>
+
+        <div class="form-actions">
+            <button type="button"
+                    class="btn btn-outline-secondary"
+                    onclick="closeRevenueForm()">
+                Cancel
+            </button>
+
+            <button type="submit" class="btn btn-primary">
+                Save Revenue
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        const revenueEntries = [];
+
+        const revenueMoneyFormat = new Intl.NumberFormat("en-PK", {
+            maximumFractionDigits: 2
+        });
+
+        function formatRevenueMoney(amount) {
+            return "Rs. " + revenueMoneyFormat.format(amount);
+        }
+
+        function openRevenueForm() {
+            document.getElementById("revenueModal").hidden = false;
+
+            document.getElementById("revenueDate").value =
+                new Date().toLocaleDateString("en-CA");
+
+            document.getElementById("revenueDescription").focus();
+        }
+
+        function closeRevenueForm() {
+            document.getElementById("revenueModal").hidden = true;
+        }
+
+        function escapeRevenueHtml(value) {
+            return String(value).replace(/[&<>"']/g, character => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            })[character]);
+        }
+
+        document.getElementById("revenueForm")
+            .addEventListener("submit", function (event) {
+                event.preventDefault();
+
+                const description =
+                    document.getElementById("revenueDescription")
+                        .value.trim();
+
+                const amount =
+                    Number(document.getElementById("revenueAmount").value);
+
+                if (!description || !Number.isFinite(amount) || amount <= 0) {
+                    return;
+                }
+
+                revenueEntries.push({
+                    description,
+                    date: document.getElementById("revenueDate").value,
+                    amount,
+                    unit: document.getElementById("revenueUnit").value,
+                    account: document.getElementById("revenueAccount").value
+                });
+
+                this.reset();
+                closeRevenueForm();
+                renderRevenue();
+            });
+
+        function renderRevenue() {
+            const search = document.getElementById("revenueSearch")
+                .value.trim().toLowerCase();
+
+            const unit = document.getElementById("revenueUnitFilter").value;
+            const account =
+                document.getElementById("revenueAccountFilter").value;
+
+            const filtered = revenueEntries.filter(entry =>
+                (
+                    entry.description.toLowerCase().includes(search) ||
+                    entry.account.toLowerCase().includes(search)
+                ) &&
+                (unit === "all" || entry.unit === unit) &&
+                (account === "all" || entry.account === account)
+            );
+
+            const rows = document.getElementById("revenueRows");
+
+            if (filtered.length === 0) {
+                const message = revenueEntries.length
+                    ? "No matching revenue entries found."
+                    : "No revenue entries yet. Add your first revenue entry.";
+
+                rows.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            ${escapeRevenueHtml(message)}
+                        </td>
+                    </tr>`;
+            } else {
+                rows.innerHTML = filtered.map(entry => `
+                    <tr>
+                        <td>${escapeRevenueHtml(entry.date)}</td>
+                        <td>${escapeRevenueHtml(entry.description)}</td>
+                        <td>${escapeRevenueHtml(entry.unit)}</td>
+                        <td>${escapeRevenueHtml(entry.account)}</td>
+                        <td class="text-end income-amount">
+                            + ${formatRevenueMoney(entry.amount)}
+                        </td>
+                    </tr>
+                `).join("");
+            }
+
+            const total = revenueEntries.reduce(
+                (sum, entry) => sum + entry.amount, 0
+            );
+
+            document.getElementById("totalRevenue").textContent =
+                formatRevenueMoney(total);
+
+            document.getElementById("revenueCount").textContent =
+                revenueEntries.length;
+
+            document.getElementById("averageRevenue").textContent =
+                formatRevenueMoney(
+                    revenueEntries.length ? total / revenueEntries.length : 0
+                );
+        }
+
+        ["revenueSearch", "revenueUnitFilter", "revenueAccountFilter"]
+            .forEach(id => {
+                const element = document.getElementById(id);
+                element.addEventListener("input", renderRevenue);
+                element.addEventListener("change", renderRevenue);
+            });
+
+        document.getElementById("revenueModal")
+            .addEventListener("click", function (event) {
+                if (event.target === this) {
+                    closeRevenueForm();
+                }
+            });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") {
+                closeRevenueForm();
+            }
+        });
+
+        renderRevenue();
+    </script>
+}

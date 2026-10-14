@@ -1,0 +1,475 @@
+
+@{
+    ViewData["Title"] = "Unit Dashboard";
+}
+
+<style>
+    .unit-dashboard { display: flex; flex-direction: column; gap: 22px; }
+    .unit-dashboard .unit-heading {
+        display: flex; justify-content: space-between; align-items: center;
+        gap: 16px; flex-wrap: wrap;
+    }
+    .unit-dashboard .eyebrow {
+        font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+        color: #64748b; margin-bottom: 7px;
+    }
+    .unit-dashboard h1 { margin: 0 0 7px; font-size: 28px; font-weight: 750; }
+    .unit-dashboard .subtext { margin: 0; color: #64748b; font-size: 14px; }
+    .unit-dashboard .unit-label {
+        display: inline-flex; align-items: center; gap: 8px;
+        background: #eff6ff; color: #1d4ed8; padding: 9px 13px;
+        border-radius: 9px; font-size: 12px; font-weight: 700;
+    }
+    .unit-dashboard .unit-metrics {
+        display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px;
+    }
+    .unit-dashboard .metric {
+        background: white; border: 1px solid #e8edf4; border-radius: 14px;
+        padding: 20px; min-width: 0; transition: transform .2s, box-shadow .2s;
+    }
+    .unit-dashboard .metric:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 9px 24px rgba(15, 23, 42, .06);
+    }
+    .unit-dashboard .metric-top {
+        display: flex; justify-content: space-between; gap: 8px;
+        align-items: center; color: #64748b; font-size: 12px; font-weight: 600;
+    }
+    .unit-dashboard .metric-icon {
+        width: 36px; height: 36px; display: grid; place-items: center;
+        border-radius: 10px; font-size: 18px;
+    }
+    .unit-dashboard .metric-value {
+        margin: 18px 0 7px; font-size: clamp(20px, 2vw, 27px);
+        font-weight: 750; color: #172033; overflow-wrap: anywhere;
+    }
+    .unit-dashboard .metric-note { margin: 0; color: #94a3b8; font-size: 11px; }
+    .unit-dashboard .dashboard-columns {
+        display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr);
+        gap: 18px;
+    }
+    .unit-dashboard .dash-panel {
+        background: white; border: 1px solid #e8edf4; border-radius: 14px;
+        padding: 22px; min-width: 0;
+    }
+    .unit-dashboard .panel-heading {
+        display: flex; justify-content: space-between; align-items: flex-start;
+        gap: 12px; margin-bottom: 20px;
+    }
+    .unit-dashboard .panel-heading h3 { margin: 0 0 6px; font-size: 16px; font-weight: 700; }
+    .unit-dashboard .panel-heading p { margin: 0; font-size: 12px; color: #94a3b8; }
+    .unit-dashboard .period-select {
+        border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px;
+        font-size: 12px; background: white; color: #334155; max-width: 140px;
+    }
+    .unit-dashboard .chart {
+        height: 205px; display: flex; align-items: stretch;
+        gap: 12px; padding-top: 12px;
+    }
+    .unit-dashboard .chart-column {
+        flex: 1; min-width: 0; display: flex; flex-direction: column;
+        justify-content: flex-end; align-items: center; gap: 9px;
+    }
+    .unit-dashboard .bar-area {
+        height: 165px; width: 100%; display: flex; align-items: flex-end;
+        justify-content: center; gap: 5px; border-bottom: 1px solid #e9eef5;
+        background: repeating-linear-gradient(to bottom, transparent 0, transparent 39px, #f1f5f9 40px);
+    }
+    .unit-dashboard .bar {
+        width: min(27px, 42%); min-height: 3px; border-radius: 5px 5px 0 0;
+        transition: height .3s ease;
+    }
+    .unit-dashboard .bar-revenue { background: #2563eb; }
+    .unit-dashboard .bar-expense { background: #cbd5e1; }
+    .unit-dashboard .chart-month { color: #94a3b8; font-size: 10px; }
+    .unit-dashboard .chart-legend {
+        display: flex; flex-wrap: wrap; gap: 16px; margin-top: 18px;
+        font-size: 11px; color: #64748b;
+    }
+    .unit-dashboard .legend-dot {
+        display: inline-block; width: 8px; height: 8px;
+        border-radius: 3px; margin-right: 6px;
+    }
+    .unit-dashboard .summary-list { display: flex; flex-direction: column; }
+    .unit-dashboard .summary-row {
+        display: flex; justify-content: space-between; align-items: center;
+        gap: 12px; padding: 15px 0; border-bottom: 1px solid #f1f5f9;
+        font-size: 13px;
+    }
+    .unit-dashboard .summary-row:last-child { border-bottom: 0; }
+    .unit-dashboard .summary-name { color: #64748b; }
+    .unit-dashboard .summary-amount { font-weight: 700; color: #172033; text-align: right; }
+    .unit-dashboard .summary-amount.positive { color: #059669; }
+    .unit-dashboard .summary-amount.negative { color: #dc2626; }
+    .unit-dashboard .demo-notice {
+        display: flex; align-items: flex-start; gap: 10px;
+        padding: 13px 15px; border-radius: 10px; background: #fffbeb;
+        border: 1px solid #fde68a; color: #92400e; font-size: 12px;
+    }
+    .unit-dashboard .table-responsive { overflow-x: auto; }
+    .unit-dashboard .unit-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .unit-dashboard .unit-table th {
+        text-align: left; color: #94a3b8; font-weight: 600;
+        padding: 12px 10px; border-bottom: 1px solid #e8edf4; white-space: nowrap;
+    }
+    .unit-dashboard .unit-table td {
+        padding: 14px 10px; border-bottom: 1px solid #f1f5f9;
+        color: #475569; white-space: nowrap;
+    }
+    .unit-dashboard .unit-table tr:last-child td { border-bottom: 0; }
+    .unit-dashboard .mini-status {
+        display: inline-block; padding: 5px 8px; border-radius: 6px;
+        background: #fef3c7; color: #92400e; font-size: 10px; font-weight: 700;
+    }
+    .unit-dashboard .back-link {
+        display: inline-flex; align-items: center; gap: 7px;
+        color: #475569; text-decoration: none; font-size: 12px; font-weight: 600;
+        margin-bottom: 20px;
+    }
+    .unit-dashboard .back-link:hover { color: #2563eb; }
+    @@media (max-width: 1050px) {
+        .unit-dashboard .unit-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .unit-dashboard .dashboard-columns { grid-template-columns: 1fr; }
+    }
+    @@media (max-width: 560px) {
+        .unit-dashboard .unit-metrics { grid-template-columns: 1fr; }
+        .unit-dashboard .dash-panel { padding: 16px; }
+        .unit-dashboard h1 { font-size: 23px; }
+        .unit-dashboard .chart { gap: 5px; }
+    }
+</style>
+
+<div class="unit-dashboard">
+    <div>
+        <a asp-controller="Units" asp-action="Index" class="back-link">
+            ← Back to Organizational Units
+        </a>
+
+        <div class="unit-heading">
+            <div>
+                <div class="eyebrow">UNIT FINANCIAL WORKSPACE</div>
+                <h1 id="unitTitle">School Dashboard</h1>
+                <p class="subtext">Financial performance and cash position for this unit.</p>
+            </div>
+
+            <span class="unit-label">
+                <span>●</span> Unit Dashboard
+            </span>
+        </div>
+    </div>
+
+    <div class="demo-notice">
+        <span>ⓘ</span>
+        <span><strong>DASHBOARD</strong> 
+        .</span>
+    </div>
+
+    <section class="unit-metrics">
+        <article class="metric">
+            <div class="metric-top">
+                <span>Period Revenue</span>
+                <span class="metric-icon" style="background:#eff6ff;color:#2563eb;">↗</span>
+            </div>
+            <div class="metric-value" id="periodRevenue">Rs. 0</div>
+            <p class="metric-note">Revenue in selected period</p>
+        </article>
+
+        <article class="metric">
+            <div class="metric-top">
+                <span>Period Expenses</span>
+                <span class="metric-icon" style="background:#fff7ed;color:#ea580c;">↘</span>
+            </div>
+            <div class="metric-value" id="periodExpenses">Rs. 0</div>
+            <p class="metric-note">Expenses in selected period</p>
+        </article>
+
+        <article class="metric">
+            <div class="metric-top">
+                <span>All-Time Net Balance</span>
+                <span class="metric-icon" style="background:#ecfdf5;color:#059669;">₨</span>
+            </div>
+            <div class="metric-value" id="netBalance">Rs. 0</div>
+            <p class="metric-note">Cumulative revenue minus expenses</p>
+        </article>
+
+        <article class="metric">
+            <div class="metric-top">
+                <span>Outstanding Bills</span>
+                <span class="metric-icon" style="background:#fef2f2;color:#dc2626;">!</span>
+            </div>
+            <div class="metric-value" id="outstandingBills">Rs. 0</div>
+            <p class="metric-note">Remaining unpaid amount, including overdue bills</p>
+        </article>
+    </section>
+
+    <section class="dashboard-columns">
+        <article class="dash-panel">
+            <div class="panel-heading">
+                <div>
+                    <h3>Cash Flow Overview</h3>
+                    <p>Monthly revenue compared with expenses</p>
+                </div>
+                <select id="reportPeriod" class="period-select" aria-label="Reporting period">
+                    <option value="month">This Month</option>
+                    <option value="lastMonth">Last Month</option>
+                    <option value="year">This Year</option>
+                    <option value="all">All Time</option>
+                </select>
+            </div>
+
+            <div id="cashFlowChart" class="chart"></div>
+
+            <div class="chart-legend">
+                <span><i class="legend-dot" style="background:#2563eb;"></i>Revenue</span>
+                <span><i class="legend-dot" style="background:#cbd5e1;"></i>Expenses</span>
+            </div>
+        </article>
+
+        <article class="dash-panel">
+            <div class="panel-heading">
+                <div>
+                    <h3>Financial Summary</h3>
+                    <p>Current illustrative position</p>
+                </div>
+            </div>
+
+            <div class="summary-list">
+                <div class="summary-row">
+                    <span class="summary-name">Cash on Hand</span>
+                    <span class="summary-amount" id="cashOnHand">Rs. 0</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-name">Bank Balance</span>
+                    <span class="summary-amount" id="bankBalance">Rs. 0</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-name">Outstanding Bills</span>
+                    <span class="summary-amount" id="summaryOutstanding">Rs. 0</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-name">Net Balance</span>
+                    <span class="summary-amount positive" id="summaryNet">Rs. 0</span>
+                </div>
+            </div>
+        </article>
+    </section>
+
+    <section class="dash-panel">
+        <div class="panel-heading">
+            <div>
+                <h3>Recent Financial Activity</h3>
+                <p>Example entries for the selected unit</p>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="unit-table">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Type</th>
+                        <th>Date</th>
+                        <th>Account</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="activityRows"></tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        const unitDemoData = {
+            "School": {
+                revenue: 450000, expenses: 285000, net: 620000,
+                outstanding: 38000, cash: 85000, bank: 535000,
+                months: [
+                    { label: "May", revenue: 380, expenses: 250 },
+                    { label: "Jun", revenue: 410, expenses: 290 },
+                    { label: "Jul", revenue: 390, expenses: 270 },
+                    { label: "Aug", revenue: 440, expenses: 300 },
+                    { label: "Sep", revenue: 420, expenses: 280 },
+                    { label: "Oct", revenue: 450, expenses: 285 }
+                ]
+            },
+            "College": {
+                revenue: 620000, expenses: 390000, net: 870000,
+                outstanding: 52000, cash: 120000, bank: 750000,
+                months: [
+                    { label: "May", revenue: 520, expenses: 340 },
+                    { label: "Jun", revenue: 560, expenses: 350 },
+                    { label: "Jul", revenue: 580, expenses: 370 },
+                    { label: "Aug", revenue: 600, expenses: 380 },
+                    { label: "Sep", revenue: 610, expenses: 385 },
+                    { label: "Oct", revenue: 620, expenses: 390 }
+                ]
+            },
+            "BS Program": {
+                revenue: 780000, expenses: 510000, net: 1150000,
+                outstanding: 65000, cash: 150000, bank: 1000000,
+                months: [
+                    { label: "May", revenue: 660, expenses: 440 },
+                    { label: "Jun", revenue: 690, expenses: 460 },
+                    { label: "Jul", revenue: 710, expenses: 475 },
+                    { label: "Aug", revenue: 740, expenses: 490 },
+                    { label: "Sep", revenue: 760, expenses: 500 },
+                    { label: "Oct", revenue: 780, expenses: 510 }
+                ]
+            },
+            "Training Center": {
+                revenue: 310000, expenses: 195000, net: 410000,
+                outstanding: 24000, cash: 60000, bank: 350000,
+                months: [
+                    { label: "May", revenue: 250, expenses: 170 },
+                    { label: "Jun", revenue: 270, expenses: 175 },
+                    { label: "Jul", revenue: 280, expenses: 180 },
+                    { label: "Aug", revenue: 290, expenses: 185 },
+                    { label: "Sep", revenue: 300, expenses: 190 },
+                    { label: "Oct", revenue: 310, expenses: 195 }
+                ]
+            },
+            "Evening Academy": {
+                revenue: 225000, expenses: 145000, net: 295000,
+                outstanding: 18000, cash: 45000, bank: 250000,
+                months: [
+                    { label: "May", revenue: 180, expenses: 120 },
+                    { label: "Jun", revenue: 190, expenses: 125 },
+                    { label: "Jul", revenue: 195, expenses: 130 },
+                    { label: "Aug", revenue: 210, expenses: 135 },
+                    { label: "Sep", revenue: 220, expenses: 140 },
+                    { label: "Oct", revenue: 225, expenses: 145 }
+                ]
+            }
+        };
+
+        const demoActivities = [
+            { description: "Monthly fee collection", type: "Revenue", date: "10 Oct 2026", account: "Main Bank", amount: 85000 },
+            { description: "Utility bill payment", type: "Expense", date: "08 Oct 2026", account: "Main Cash", amount: 18000 },
+            { description: "Learning materials", type: "Expense", date: "05 Oct 2026", account: "Main Bank", amount: 12500 },
+            { description: "Course fee collection", type: "Revenue", date: "02 Oct 2026", account: "Main Cash", amount: 32000 }
+        ];
+
+        function formatCurrency(amount) {
+            return "Rs. " + Number(amount).toLocaleString("en-PK");
+        }
+
+        function safeText(value) {
+            return String(value).replace(/[&<>"']/g, character => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            })[character]);
+        }
+
+    let selectedUnitName = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewData["UnitName"] ?? "School"));
+
+        try {
+            const storedUnit = sessionStorage.getItem("selectedUnitDashboard");
+            if (storedUnit) {
+                const parsedUnit = JSON.parse(storedUnit);
+                if (parsedUnit && typeof parsedUnit.name === "string" &&
+                    unitDemoData[parsedUnit.name]) {
+                    selectedUnitName = parsedUnit.name;
+                }
+            }
+        } catch (error) {
+            selectedUnitName = "School";
+        }
+
+        function renderUnitDashboard() {
+            const unit = unitDemoData[selectedUnitName] || unitDemoData["School"];
+            const period = document.getElementById("reportPeriod").value;
+
+            document.getElementById("unitTitle").textContent =
+                selectedUnitName + " Dashboard";
+
+            const periodRevenue = period === "lastMonth"
+                ? Math.round(unit.revenue * 0.96)
+                : period === "year"
+                    ? unit.revenue * 6
+                    : period === "all"
+                        ? unit.net + unit.expenses
+                        : unit.revenue;
+
+            const periodExpenses = period === "lastMonth"
+                ? Math.round(unit.expenses * 0.95)
+                : period === "year"
+                    ? unit.expenses * 6
+                    : period === "all"
+                        ? Math.max(0, unit.net + unit.expenses - unit.net)
+                        : unit.expenses;
+
+            document.getElementById("periodRevenue").textContent =
+                formatCurrency(periodRevenue);
+
+            document.getElementById("periodExpenses").textContent =
+                formatCurrency(periodExpenses);
+
+            document.getElementById("netBalance").textContent =
+                formatCurrency(unit.net);
+
+            document.getElementById("outstandingBills").textContent =
+                formatCurrency(unit.outstanding);
+
+            document.getElementById("cashOnHand").textContent =
+                formatCurrency(unit.cash);
+
+            document.getElementById("bankBalance").textContent =
+                formatCurrency(unit.bank);
+
+            document.getElementById("summaryOutstanding").textContent =
+                formatCurrency(unit.outstanding);
+
+            document.getElementById("summaryNet").textContent =
+                formatCurrency(unit.net);
+
+            document.getElementById("cashFlowChart").innerHTML =
+                unit.months.map(month => {
+                    const maximum = Math.max(
+                        ...unit.months.map(item => Math.max(item.revenue, item.expenses))
+                    );
+
+                    const revenueHeight = Math.max(3, month.revenue / maximum * 100);
+                    const expenseHeight = Math.max(3, month.expenses / maximum * 100);
+
+                    return `
+                        <div class="chart-column">
+                            <div class="bar-area">
+                                <div class="bar bar-revenue"
+                                    style="height:${revenueHeight}%"
+                                    title="Revenue: ${month.revenue} thousand"></div>
+                                <div class="bar bar-expense"
+                                    style="height:${expenseHeight}%"
+                                    title="Expenses: ${month.expenses} thousand"></div>
+                            </div>
+                            <span class="chart-month">${safeText(month.label)}</span>
+                        </div>
+                    `;
+                }).join("");
+
+            document.getElementById("activityRows").innerHTML =
+                demoActivities.map(activity => `
+                    <tr>
+                        <td><strong>${safeText(activity.description)}</strong></td>
+                        <td>${safeText(activity.type)}</td>
+                        <td>${safeText(activity.date)}</td>
+                        <td>${safeText(activity.account)}</td>
+                        <td style="font-weight:700;color:${
+                            activity.type === "Revenue" ? "#059669" : "#dc2626"
+                        };">
+                            ${activity.type === "Revenue" ? "+" : "−"}${formatCurrency(activity.amount)}
+                        </td>
+                    </tr>
+                `).join("");
+        }
+
+        document.getElementById("reportPeriod")
+            .addEventListener("change", renderUnitDashboard);
+
+        renderUnitDashboard();
+    </script>
+}

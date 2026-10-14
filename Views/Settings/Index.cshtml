@@ -1,0 +1,1080 @@
+@{
+    ViewData["Title"] = "Settings";
+}
+
+<style>
+    .settings-layout {
+        display: grid;
+        grid-template-columns: 235px minmax(0, 1fr);
+        gap: 22px;
+        align-items: start;
+    }
+
+    .settings-nav {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 10px;
+        position: sticky;
+        top: 18px;
+    }
+
+    .settings-nav-label {
+        padding: 12px 10px 8px;
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+    }
+
+    .settings-nav-item {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        width: 100%;
+        padding: 12px 11px;
+        border: 0;
+        border-radius: 9px;
+        background: transparent;
+        color: #475569;
+        text-align: left;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        margin-bottom: 3px;
+    }
+
+    .settings-nav-item:hover {
+        background: #f8fafc;
+        color: #1d4ed8;
+    }
+
+    .settings-nav-item.active {
+        background: #eff6ff;
+        color: #1d4ed8;
+        font-weight: 700;
+    }
+
+    .settings-nav-icon {
+        width: 24px;
+        text-align: center;
+        font-size: 16px;
+    }
+
+    .settings-content {
+        min-width: 0;
+    }
+
+    .settings-section {
+        display: none;
+    }
+
+    .settings-section.active {
+        display: block;
+    }
+
+    .settings-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 24px;
+        margin-bottom: 18px;
+    }
+
+    .settings-card-heading {
+        padding-bottom: 18px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .settings-card-heading h3 {
+        font-size: 16px;
+        font-weight: 700;
+        margin: 0 0 6px;
+        color: #0f172a;
+    }
+
+    .settings-card-heading p {
+        font-size: 13px;
+        color: #64748b;
+        margin: 0;
+    }
+
+    .settings-field {
+        margin-bottom: 18px;
+    }
+
+    .settings-field:last-child {
+        margin-bottom: 0;
+    }
+
+    .settings-field label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 7px;
+        color: #334155;
+    }
+
+    .settings-help {
+        color: #94a3b8;
+        font-size: 12px;
+        margin-top: 6px;
+    }
+
+    .settings-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+    }
+
+    .settings-toggle-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 16px 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .settings-toggle-row:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .settings-toggle-row strong {
+        display: block;
+        color: #334155;
+        font-size: 13px;
+        margin-bottom: 5px;
+    }
+
+    .settings-toggle-row p {
+        color: #64748b;
+        font-size: 12px;
+        margin: 0;
+        line-height: 1.6;
+    }
+
+    .settings-toggle-row input[type="checkbox"] {
+        width: 17px;
+        height: 17px;
+        flex-shrink: 0;
+        margin-top: 2px;
+        accent-color: #2563eb;
+        cursor: pointer;
+    }
+
+    .settings-page-title {
+        margin-bottom: 22px;
+    }
+
+    .settings-page-title h2 {
+        font-size: 21px;
+        font-weight: 750;
+        margin: 0 0 7px;
+        color: #0f172a;
+    }
+
+    .settings-page-title p {
+        font-size: 13px;
+        color: #64748b;
+        margin: 0;
+    }
+
+    .settings-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 9px;
+        border-radius: 20px;
+        background: #f1f5f9;
+        color: #475569;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .settings-table th {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        color: #64748b;
+        background: #f8fafc;
+        white-space: nowrap;
+    }
+
+    .settings-table td {
+        font-size: 13px;
+        vertical-align: middle;
+    }
+
+    .settings-table input,
+    .settings-table select {
+        min-width: 100px;
+    }
+
+    .settings-inline-form {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+    }
+
+    .settings-inline-form .form-control,
+    .settings-inline-form .form-select {
+        flex: 1;
+        min-width: 150px;
+    }
+
+    .settings-empty {
+        padding: 25px 12px;
+        text-align: center;
+        color: #94a3b8;
+        font-size: 13px;
+    }
+
+    .settings-notice {
+        padding: 14px 16px;
+        border: 1px solid #bfdbfe;
+        background: #eff6ff;
+        color: #1e40af;
+        border-radius: 10px;
+        font-size: 12px;
+        line-height: 1.6;
+        margin-bottom: 18px;
+    }
+
+    .settings-danger {
+        border-color: #fecaca;
+    }
+
+    .settings-danger .settings-card-heading {
+        border-color: #fee2e2;
+    }
+
+    .settings-danger .settings-card-heading h3 {
+        color: #b91c1c;
+    }
+
+    @@media (max-width: 850px) {
+        .settings-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .settings-nav {
+            position: static;
+            display: flex;
+            gap: 5px;
+            overflow-x: auto;
+        }
+
+        .settings-nav-label {
+            display: none;
+        }
+
+        .settings-nav-item {
+            width: auto;
+            flex-shrink: 0;
+        }
+
+        .settings-grid {
+            grid-template-columns: 1fr;
+            gap: 0;
+        }
+    }
+
+    @@media (max-width: 520px) {
+        .settings-card {
+            padding: 17px;
+        }
+
+        .settings-nav-item {
+            padding: 10px;
+        }
+
+        .settings-nav-item .settings-nav-text {
+            display: none;
+        }
+    }
+</style>
+
+<div class="page-header">
+    <div>
+        <h1>Settings</h1>
+        <p>Configure financial operations, categories, access and system preferences.</p>
+    </div>
+
+    <span class="settings-chip">Owner / Admin</span>
+</div>
+
+<div class="settings-notice">
+    <strong>Configuration preview</strong><br />
+   
+</div>
+
+<div class="settings-layout">
+
+    <aside class="settings-nav">
+        <div class="settings-nav-label">General</div>
+
+        <button type="button" class="settings-nav-item active"
+                data-section="organization">
+            <span class="settings-nav-icon">▦</span>
+            <span class="settings-nav-text">Organization</span>
+        </button>
+
+        <button type="button" class="settings-nav-item"
+                data-section="finance">
+            <span class="settings-nav-icon">◈</span>
+            <span class="settings-nav-text">Financial Settings</span>
+        </button>
+
+        <div class="settings-nav-label">Financial Management</div>
+
+        <button type="button" class="settings-nav-item"
+                data-section="categories">
+            <span class="settings-nav-icon">☷</span>
+            <span class="settings-nav-text">Categories</span>
+        </button>
+
+        <button type="button" class="settings-nav-item"
+                data-section="bills">
+            <span class="settings-nav-icon">▤</span>
+            <span class="settings-nav-text">Bills & Payments</span>
+        </button>
+
+        <div class="settings-nav-label">Administration</div>
+
+        <button type="button" class="settings-nav-item"
+                data-section="access">
+            <span class="settings-nav-icon">♙</span>
+            <span class="settings-nav-text">Roles & Access</span>
+        </button>
+
+        <button type="button" class="settings-nav-item"
+                data-section="notifications">
+            <span class="settings-nav-icon">♧</span>
+            <span class="settings-nav-text">Notifications</span>
+        </button>
+
+        <button type="button" class="settings-nav-item"
+                data-section="security">
+            <span class="settings-nav-icon">◇</span>
+            <span class="settings-nav-text">Audit & Security</span>
+        </button>
+    </aside>
+
+    <main class="settings-content">
+
+        <!-- ORGANIZATION -->
+        <section class="settings-section active" id="section-organization">
+            <div class="settings-page-title">
+                <h2>Organization Profile</h2>
+                <p>Manage the basic information displayed across the system.</p>
+            </div>
+
+            <div class="settings-card">
+                <div class="settings-card-heading">
+                    <h3>Organization information</h3>
+                    <p>Details for reports and internal records.</p>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="settings-field">
+                        <label for="orgName">Organization name</label>
+                        <input id="orgName" class="form-control"
+                               value="Edutech Solutions" required />
+                    </div>
+
+                    <div class="settings-field">
+                        <label for="orgEmail">Official email</label>
+                        <input id="orgEmail" type="email" class="form-control"
+                               placeholder="admin@example.com" />
+                    </div>
+
+                    <div class="settings-field">
+                        <label for="orgPhone">Contact number</label>
+                        <input id="orgPhone" class="form-control"
+                               placeholder="Organization contact number" />
+                    </div>
+
+                    <div class="settings-field">
+                        <label for="orgAddress">Address</label>
+                        <input id="orgAddress" class="form-control"
+                               placeholder="Organization address" />
+                    </div>
+
+                    <div class="settings-field">
+                        <label for="orgFiscalYear">Financial year starts</label>
+                        <select id="orgFiscalYear" class="form-select">
+                            <option value="January">January</option>
+                            <option value="July">July</option>
+                            <option value="April">April</option>
+                        </select>
+                    </div>
+
+                    <div class="settings-field">
+                        <label for="orgTimezone">Time zone</label>
+                        <select id="orgTimezone" class="form-select">
+                            <option value="Asia/Karachi">Pakistan Standard Time</option>
+                            <option value="UTC">UTC</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FINANCE -->
+        <section class="settings-section" id="section-finance">
+            <div class="settings-page-title">
+                <h2>Financial Settings</h2>
+                <p>Set how financial entries and balances are handled.</p>
+            </div>
+
+            <div class="settings-card">
+                <div class="settings-card-heading">
+                    <h3>Financial display</h3>
+                    <p>Formatting preferences for amounts and dates.</p>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="settings-field">
+                        <label for="currency">Default currency</label>
+                        <select id="currency" class="form-select">
+                            <option value="PKR">PKR — Pakistani Rupee</option>
+                            <option value="USD">USD — US Dollar</option>
+                            <option value="AED">AED — UAE Dirham</option>
+                        </select>
+                    </div>
+
+                    <div class="settings-field">
+                        <label for="dateFormat">Date format</label>
+                        <select id="dateFormat" class="form-select">
+                            <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                            <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                            <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                        </select>
+                    </div>
+
+                    <div class="settings-field">
+                        <label for="decimalPlaces">Decimal places</label>
+                        <select id="decimalPlaces" class="form-select">
+                            <option value="0">0 — Whole numbers</option>
+                            <option value="2">2 — Two decimal places</option>
+                        </select>
+                    </div>
+
+                    <div class="settings-field">
+                        <label for="defaultPayment">Default payment method</label>
+                        <select id="defaultPayment" class="form-select">
+                            <option value="Cash">Cash</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <div class="settings-card-heading">
+                    <h3>Transaction controls</h3>
+                    <p>Default controls for entering and reviewing financial records.</p>
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>Require transaction description</strong>
+                        <p>Entries must explain the reason for income or expense.</p>
+                    </div>
+                    <input type="checkbox" id="requireDescription" checked />
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>Require reference number</strong>
+                        <p>Require a reference for traceability when recording transactions.</p>
+                    </div>
+                    <input type="checkbox" id="requireReference" />
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>Keep an audit trail</strong>
+                        <p>Track who created or edited financial entries.</p>
+                    </div>
+                    <input type="checkbox" id="enableAudit" checked />
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>Allow partial bill payments</strong>
+                        <p>Record multiple payments against the same bill.</p>
+                    </div>
+                    <input type="checkbox" id="allowPartialPayments" checked />
+                </div>
+            </div>
+        </section>
+
+        <!-- CATEGORIES -->
+        <section class="settings-section" id="section-categories">
+            <div class="settings-page-title">
+                <h2>Financial Categories</h2>
+                <p>Manage the categories available when recording revenue, expenses and bills.</p>
+            </div>
+
+            <div class="settings-card">
+                <div class="settings-card-heading">
+                    <h3>Revenue categories</h3>
+                    <p>Examples: tuition fees, admission fees and training income.</p>
+                </div>
+
+                <form id="revenueCategoryForm" class="settings-inline-form">
+                    <input id="revenueCategoryName" class="form-control"
+                           placeholder="New revenue category" maxlength="80" required />
+                    <button class="btn btn-primary" type="submit">+ Add Category</button>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table settings-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="revenueCategoryRows"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <div class="settings-card-heading">
+                    <h3>Expense categories</h3>
+                    <p>Examples: salaries, utilities, maintenance and supplies.</p>
+                </div>
+
+                <form id="expenseCategoryForm" class="settings-inline-form">
+                    <input id="expenseCategoryName" class="form-control"
+                           placeholder="New expense category" maxlength="80" required />
+                    <button class="btn btn-primary" type="submit">+ Add Category</button>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table settings-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expenseCategoryRows"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <div class="settings-card-heading">
+                    <h3>Bill categories</h3>
+                    <p>Classify bills for easier tracking and reporting.</p>
+                </div>
+
+                <form id="billCategoryForm" class="settings-inline-form">
+                    <input id="billCategoryName" class="form-control"
+                           placeholder="New bill category" maxlength="80" required />
+                    <button class="btn btn-primary" type="submit">+ Add Category</button>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table settings-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="billCategoryRows"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="settings-notice">
+                <strong>Important:</strong> Categories already used by financial records
+                should eventually be deactivated rather than permanently deleted, so
+                historical reports remain accurate.
+            </div>
+        </section>
+
+        <!-- BILLS -->
+        <section class="settings-section" id="section-bills">
+            <div class="settings-page-title">
+                <h2>Bills & Payments</h2>
+                <p>Configure due dates, reminders and payment tracking.</p>
+            </div>
+
+            <div class="settings-card">
+                <div class="settings-card-heading">
+                    <h3>Bill defaults</h3>
+                    <p>Default values used when creating a new bill.</p>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="settings-field">
+                        <label for="defaultDueDays">Default payment terms</label>
+                        <select id="defaultDueDays" class="form-select">
+                            <option value="0">Due immediately</option>
+                            <option value="7">7 days</option>
+                            <option value="15">15 days</option>
+                            <option value="30" selected>30 days</option>
+                        </select>
+                    </div>
+
+                    <div class="settings-field">
+                        <label for="reminderDays">Overdue reminder interval</label>
+                        <select id="reminderDays" class="form-select">
+                            <option value="1">Every day</option>
+                            <option value="3" selected>Every 3 days</option>
+                            <option value="7">Every 7 days</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <div class="settings-card-heading">
+                    <h3>Payment rules</h3>
+                    <p>Control how bill payments are recorded.</p>
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>Allow partial payments</strong>
+                        <p>A bill can be paid in multiple installments.</p>
+                    </div>
+                    <input type="checkbox" id="billPartialPayments" checked />
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>Notify Owner about overdue bills</strong>
+                        <p>Alert the Owner when an unpaid balance passes its due date.</p>
+                    </div>
+                    <input type="checkbox" id="billOverdueNotify" checked />
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>Include partially paid bills in outstanding</strong>
+                        <p>Outstanding is calculated from the remaining unpaid amount.</p>
+                    </div>
+                    <input type="checkbox" id="billOutstanding" checked disabled />
+                </div>
+            </div>
+        </section>
+
+        <!-- ACCESS -->
+        <section class="settings-section" id="section-access">
+            <div class="settings-page-title">
+                <h2>Roles & Access</h2>
+                <p>Define what the Owner and Accountants can do.</p>
+            </div>
+
+            <div class="settings-notice">
+                These are proposed demo permission settings. Final access control
+                must be enforced server-side for every operation.
+            </div>
+
+            <div class="settings-card">
+                <div class="settings-card-heading">
+                    <h3>Owner permissions</h3>
+                    <p>Owner has organization-wide visibility and administrative control.</p>
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>View all organizational units</strong>
+                        <p>See consolidated finances across all units.</p>
+                    </div>
+                    <input type="checkbox" checked disabled />
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>Manage categories and system settings</strong>
+                        <p>Add and deactivate categories and configure defaults.</p>
+                    </div>
+                    <input type="checkbox" checked disabled />
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>Approve deletion requests</strong>
+                        <p>Review and decide whether a financial record can be deleted.</p>
+                    </div>
+                    <input type="checkbox" checked disabled />
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <div class="settings-card-heading">
+                    <h3>Accountant permissions</h3>
+                    <p>Configure the default permissions for accountant accounts.</p>
+                </div>
+
+                <div class="settings-field">
+                    <label for="accountantScope">Default access scope</label>
+                    <select id="accountantScope" class="form-select">
+                        <option value="assigned">Assigned units only</option>
+                        <option value="all-read">All units — view only</option>
+                    </select>
+                    <p class="settings-help">
+                        Assigned-unit access is the recommended default.
+                    </p>
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>Create financial entries</strong>
+                        <p>Record revenue and expenses in permitted units.</p>
+                    </div>
+                    <input type="checkbox" id="accCreate" checked />
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>Edit financial entries</strong>
+                        <p>Edit permitted entries while retaining an audit history.</p>
+                    </div>
+                    <input type="checkbox" id="accEdit" checked />
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>Delete financial entries directly</strong>
+                        <p>Recommended: disabled. Accountants submit deletion requests instead.</p>
+                    </div>
+                    <input type="checkbox" id="accDelete" disabled />
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>Manage bank accounts</strong>
+                        <p>Allow accountants to create or change bank account configuration.</p>
+                    </div>
+                    <input type="checkbox" id="accBankManage" />
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>View financial reports</strong>
+                        <p>Allow access to reports within their permitted scope.</p>
+                    </div>
+                    <input type="checkbox" id="accReports" checked />
+                </div>
+            </div>
+        </section>
+
+        <!-- NOTIFICATIONS -->
+        <section class="settings-section" id="section-notifications">
+            <div class="settings-page-title">
+                <h2>Notifications</h2>
+                <p>Choose which events should appear in the Owner notification center.</p>
+            </div>
+
+            <div class="settings-card">
+                <div class="settings-card-heading">
+                    <h3>Financial activity alerts</h3>
+                    <p>Keep the Owner informed without requiring approval for every transaction.</p>
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>New financial entries</strong>
+                        <p>Notify when an accountant records revenue or an expense.</p>
+                    </div>
+                    <input type="checkbox" id="notifyNewEntries" checked />
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>Edited financial entries</strong>
+                        <p>Notify when an existing financial entry is changed.</p>
+                    </div>
+                    <input type="checkbox" id="notifyEditedEntries" checked />
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>Deletion requests</strong>
+                        <p>Notify the Owner when an accountant requests deletion.</p>
+                    </div>
+                    <input type="checkbox" id="notifyDeletionRequests" checked />
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>Overdue bills</strong>
+                        <p>Notify when bills have remaining unpaid amounts after the due date.</p>
+                    </div>
+                    <input type="checkbox" id="notifyOverdueBills" checked />
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>Account activity</strong>
+                        <p>Notify about relevant user and access changes.</p>
+                    </div>
+                    <input type="checkbox" id="notifyAccountActivity" checked />
+                </div>
+            </div>
+        </section>
+
+        <!-- SECURITY -->
+        <section class="settings-section" id="section-security">
+            <div class="settings-page-title">
+                <h2>Audit & Security</h2>
+                <p>Review financial record protection and system accountability settings.</p>
+            </div>
+
+            <div class="settings-card">
+                <div class="settings-card-heading">
+                    <h3>Audit trail</h3>
+                    <p>Preserve the history of changes to financial records.</p>
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>Record create and edit activity</strong>
+                        <p>Store the user, timestamp and affected record.</p>
+                    </div>
+                    <input type="checkbox" id="auditCreateEdit" checked />
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>Record approval decisions</strong>
+                        <p>Track who approved or rejected deletion requests.</p>
+                    </div>
+                    <input type="checkbox" id="auditApprovals" checked />
+                </div>
+
+                <div class="settings-toggle-row">
+                    <div>
+                        <strong>Preserve previous values</strong>
+                        <p>Keep a record of old and new values after edits.</p>
+                    </div>
+                    <input type="checkbox" id="auditChanges" checked />
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <div class="settings-card-heading">
+                    <h3>Session preferences</h3>
+                    <p>Suggested account security controls.</p>
+                </div>
+
+                <div class="settings-field">
+                    <label for="sessionTimeout">Automatic session timeout</label>
+                    <select id="sessionTimeout" class="form-select">
+                        <option value="15">15 minutes</option>
+                        <option value="30" selected>30 minutes</option>
+                        <option value="60">60 minutes</option>
+                    </select>
+                    <p class="settings-help">
+                        Actual session expiry requires authentication and backend configuration.
+                    </p>
+                </div>
+            </div>
+
+            <div class="settings-card settings-danger">
+                <div class="settings-card-heading">
+                    <h3>Destructive operations</h3>
+                    <p>Important controls for financial data integrity.</p>
+                </div>
+
+                <p style="font-size:13px;color:#64748b;line-height:1.8;margin:0;">
+                    Financial records should not be permanently removed without
+                    authorization. Use the deletion-request workflow, preserve audit
+                    history, and restrict database backup/restore operations to
+                    authorized administrators.
+                </p>
+            </div>
+        </section>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-bottom:24px;">
+            <button type="button" class="btn btn-outline-secondary"
+                    id="resetSettings">
+                Reset Preview
+            </button>
+
+            <button type="button" class="btn btn-primary"
+                    id="saveSettings">
+                Save Settings
+            </button>
+        </div>
+
+        <div id="settingsFeedback" class="settings-notice" hidden role="status"></div>
+
+    </main>
+</div>
+
+@section Scripts {
+<script>
+    // DEMO ONLY: values are held in browser memory.
+    // Database persistence and server-side permissions come later.
+
+    const settingsNavItems = document.querySelectorAll(".settings-nav-item");
+    const settingsSections = document.querySelectorAll(".settings-section");
+    const settingsFeedback = document.getElementById("settingsFeedback");
+
+    settingsNavItems.forEach(button => {
+        button.addEventListener("click", () => {
+            const sectionName = button.dataset.section;
+
+            settingsNavItems.forEach(item => item.classList.remove("active"));
+            settingsSections.forEach(section => section.classList.remove("active"));
+
+            button.classList.add("active");
+            document.getElementById("section-" + sectionName)
+                .classList.add("active");
+
+            settingsFeedback.hidden = true;
+        });
+    });
+
+    const categoryData = {
+        revenue: [
+            { name: "Tuition Fees", active: true },
+            { name: "Admission Fees", active: true },
+            { name: "Training Income", active: true },
+            { name: "Examination Fees", active: true },
+            { name: "Other Income", active: true }
+        ],
+        expense: [
+            { name: "Salaries", active: true },
+            { name: "Utilities", active: true },
+            { name: "Maintenance", active: true },
+            { name: "Office Supplies", active: true },
+            { name: "Other Expenses", active: true }
+        ],
+        bill: [
+            { name: "Utilities Bill", active: true },
+            { name: "Rent", active: true },
+            { name: "Vendor Invoice", active: true },
+            { name: "Maintenance Bill", active: true }
+        ]
+    };
+
+    function escapeSettingsHtml(value) {
+        return String(value).replace(/[&<>"']/g, character => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        })[character]);
+    }
+
+    function renderCategoryTable(type) {
+        const tbody = document.getElementById(type + "CategoryRows");
+        const categories = categoryData[type];
+
+        if (!categories.length) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="3" class="settings-empty">
+                        No categories added yet.
+                    </td>
+                </tr>`;
+            return;
+        }
+
+        tbody.innerHTML = categories.map((category, index) => `
+            <tr>
+                <td><strong>${escapeSettingsHtml(category.name)}</strong></td>
+                <td>
+                    <span class="status-badge ${category.active ? "status-paid" : "status-pending"}">
+                        ${category.active ? "Active" : "Inactive"}
+                    </span>
+                </td>
+                <td>
+                    <button type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        onclick="toggleCategory('${type}', ${index})">
+                        ${category.active ? "Deactivate" : "Activate"}
+                    </button>
+                </td>
+            </tr>
+        `).join("");
+    }
+
+    function addCategory(type, inputId) {
+        const input = document.getElementById(inputId);
+        const name = input.value.trim();
+
+        if (!name) return;
+
+        const exists = categoryData[type].some(category =>
+            category.name.toLowerCase() === name.toLowerCase()
+        );
+
+        if (exists) {
+            alert("This category already exists.");
+            return;
+        }
+
+        categoryData[type].push({ name, active: true });
+        input.value = "";
+        renderCategoryTable(type);
+        showFeedback("Category added to this preview. Save Settings is still demo-only.");
+    }
+
+    function toggleCategory(type, index) {
+        const category = categoryData[type][index];
+
+        if (!category) return;
+
+        category.active = !category.active;
+        renderCategoryTable(type);
+        showFeedback("Category status updated in this preview.");
+    }
+
+    document.getElementById("revenueCategoryForm")
+        .addEventListener("submit", event => {
+            event.preventDefault();
+            addCategory("revenue", "revenueCategoryName");
+        });
+
+    document.getElementById("expenseCategoryForm")
+        .addEventListener("submit", event => {
+            event.preventDefault();
+            addCategory("expense", "expenseCategoryName");
+        });
+
+    document.getElementById("billCategoryForm")
+        .addEventListener("submit", event => {
+            event.preventDefault();
+            addCategory("bill", "billCategoryName");
+        });
+
+    function showFeedback(message) {
+        settingsFeedback.textContent = message;
+        settingsFeedback.hidden = false;
+    }
+
+    document.getElementById("saveSettings").addEventListener("click", () => {
+        showFeedback(
+            "Preview updated. These values are not stored in the database and will reset when you refresh the page."
+        );
+    });
+
+    document.getElementById("resetSettings").addEventListener("click", () => {
+        if (!confirm("Reset this page to its original demo values?")) return;
+        window.location.reload();
+    });
+
+    ["revenue", "expense", "bill"].forEach(renderCategoryTable);
+</script>
+}

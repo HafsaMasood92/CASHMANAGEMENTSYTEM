@@ -1,0 +1,119 @@
+﻿
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>@ViewData["Title"] | Edutech Finance</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    @{
+        var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+        var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+    }
+
+    <div class="cash-app">
+
+        <aside class="cash-sidebar">
+
+            <a asp-controller="Home" asp-action="Index" class="sidebar-brand">
+                <span class="brand-mark">E</span>
+                <span class="brand-copy">
+                    <strong>edutech</strong>
+                    <small>FINANCE MANAGEMENT</small>
+                </span>
+            </a>
+
+            <nav class="sidebar-nav">
+
+                <span class="nav-section-label">WORKSPACE</span>
+
+                <a asp-controller="Home" asp-action="Index"
+                   class="sidebar-link @(currentController == "Home" ? "active" : "")">
+                    <span class="nav-icon">◫</span>
+                    <span>Overview</span>
+                </a>
+
+                              
+<span class="nav-section-label">FINANCE</span>
+
+<a asp-controller="Transactions" asp-action="Revenue"
+   class="sidebar-link @(currentController == "Transactions" && currentAction == "Revenue" ? "active" : "")">
+    <span class="nav-icon">↗</span>
+    <span>Revenue</span>
+</a>
+
+<a asp-controller="Transactions" asp-action="Expenses"
+   class="sidebar-link @(currentController == "Transactions" && currentAction == "Expenses" ? "active" : "")">
+    <span class="nav-icon">↘</span>
+    <span>Expenses</span>
+</a>
+
+
+                <a asp-controller="Bills" asp-action="Index"
+                   class="sidebar-link @(currentController == "Bills" ? "active" : "")">
+                    <span class="nav-icon">▤</span>
+                    <span>Bills &amp; Payments</span>
+                </a>
+
+                <a asp-controller="Reports" asp-action="Index"
+                   class="sidebar-link @(currentController == "Reports" ? "active" : "")">
+                    <span class="nav-icon">⌁</span>
+                    <span>Financial Reports</span>
+                </a>
+
+                <span class="nav-section-label">ORGANIZATION</span>
+
+                <a asp-controller="Units" asp-action="Index"
+                   class="sidebar-link @(currentController == "Units" ? "active" : "")">
+                    <span class="nav-icon">▦</span>
+                    <span>Organizational Units</span>
+                </a>
+
+                <a asp-controller="BankAccounts" asp-action="Index"
+                   class="sidebar-link @(currentController == "BankAccounts" ? "active" : "")">
+                    <span class="nav-icon">▣</span>
+                    <span>Bank Accounts</span>
+                </a>
+
+                <span class="nav-section-label">ADMINISTRATION</span>
+
+                <a asp-controller="Notifications" asp-action="Index"
+                   class="sidebar-link @(currentController == "Notifications" ? "active" : "")">
+                    <span class="nav-icon">♧</span>
+                    <span>Notifications</span>
+                </a>
+
+                <a asp-controller="Settings" asp-action="Index"
+                   class="sidebar-link @(currentController == "Settings" ? "active" : "")">
+                    <span class="nav-icon">⚙</span>
+                    <span>Settings</span>
+                </a>
+
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="profile-avatar">O</div>
+                <div class="profile-copy">
+                    <strong>Organization Owner</strong>
+                    <small>Owner portal</small>
+                </div>
+            </div>
+
+        </aside>
+
+        <main class="cash-main">
+            @RenderBody()
+        </main>
+
+    </div>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

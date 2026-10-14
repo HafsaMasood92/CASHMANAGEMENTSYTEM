@@ -1,0 +1,280 @@
+
+@{
+    ViewData["Title"] = "Organizational Units";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Organizational Units</h1>
+        <p>Manage your units and open their individual financial dashboards.</p>
+    </div>
+
+    <button type="button" class="btn btn-primary" onclick="openUnitForm()">
+        + Add Unit
+    </button>
+</div>
+
+<section class="summary-grid">
+    <article class="summary-card">
+        <div class="summary-card-top">
+            <span>Total Units</span>
+            <span class="summary-icon">▦</span>
+        </div>
+        <h2 id="totalUnits">5</h2>
+        <p>Registered organizational units</p>
+    </article>
+
+    <article class="summary-card">
+        <div class="summary-card-top">
+            <span>Active Units</span>
+            <span class="summary-icon">✓</span>
+        </div>
+        <h2 id="activeUnits">5</h2>
+        <p>Currently active</p>
+    </article>
+
+    <article class="summary-card">
+        <div class="summary-card-top">
+            <span>Inactive Units</span>
+            <span class="summary-icon">—</span>
+        </div>
+        <h2 id="inactiveUnits">0</h2>
+        <p>Currently inactive</p>
+    </article>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h3>All organizational units</h3>
+            <p>Select a unit to access its individual dashboard.</p>
+        </div>
+    </div>
+
+    <div class="transaction-toolbar">
+        <input id="unitSearch" type="search" class="form-control"
+               placeholder="Search units..." />
+
+        <select id="unitStatusFilter" class="form-select">
+            <option value="all">All statuses</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+        </select>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Unit name</th>
+                    <th>Category</th>
+                    <th>Financial tracking</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="unitRows"></tbody>
+        </table>
+    </div>
+
+    <p class="preview-note">
+        Preview only: unit changes are temporary and will reset when the page refreshes.
+    </p>
+</section>
+
+<div id="unitModal" class="transaction-modal" hidden>
+    <form id="unitForm" class="transaction-form">
+        <div class="form-heading">
+            <div>
+                <h2>Add Organizational Unit</h2>
+                <p>Create a unit for financial reporting.</p>
+            </div>
+            <button type="button" class="close-button"
+                    aria-label="Close form" onclick="closeUnitForm()">×</button>
+        </div>
+
+        <label for="unitName">Unit name</label>
+        <input id="unitName" class="form-control" required maxlength="100"
+               placeholder="Enter unit name" />
+
+        <label for="unitCategory">Category</label>
+        <select id="unitCategory" class="form-select" required>
+            <option value="School">School</option>
+            <option value="College">College</option>
+            <option value="BS Program">BS Program</option>
+            <option value="Training Center">Training Center</option>
+            <option value="Evening Academy">Evening Academy</option>
+            <option value="Other">Other</option>
+        </select>
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-outline-secondary"
+                    onclick="closeUnitForm()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Unit</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        const units = [
+            { id: 1, name: "School", category: "School", active: true },
+            { id: 2, name: "College", category: "College", active: true },
+            { id: 3, name: "BS Program", category: "BS Program", active: true },
+            { id: 4, name: "Training Center", category: "Training Center", active: true },
+            { id: 5, name: "Evening Academy", category: "Evening Academy", active: true }
+        ];
+
+        let nextUnitId = 6;
+
+        function escapeUnitHtml(value) {
+            return String(value).replace(/[&<>"']/g, character => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            })[character]);
+        }
+
+        function openUnitForm() {
+            document.getElementById("unitModal").hidden = false;
+            document.getElementById("unitName").focus();
+        }
+
+        function closeUnitForm() {
+            document.getElementById("unitModal").hidden = true;
+        }
+
+        
+function openUnitDashboard(id) {
+    const unit = units.find(item => item.id === id);
+
+    if (!unit) return;
+
+    if (!unit.active) {
+        alert("This unit is inactive. Activate it before opening its dashboard.");
+        return;
+    }
+
+    const url = "/Units/Dashboard?name=" + encodeURIComponent(unit.name);
+    window.location.href = url;
+}
+
+    
+
+        document.getElementById("unitForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const name = document.getElementById("unitName").value.trim();
+            const category = document.getElementById("unitCategory").value;
+
+            if (!name) return;
+
+            const exists = units.some(unit =>
+                unit.name.toLowerCase() === name.toLowerCase());
+
+            if (exists) {
+                alert("A unit with this name already exists.");
+                return;
+            }
+
+            units.push({
+                id: nextUnitId++,
+                name,
+                category,
+                active: true
+            });
+
+            this.reset();
+            closeUnitForm();
+            renderUnits();
+        });
+
+        function toggleUnitStatus(id) {
+            const unit = units.find(item => item.id === id);
+            if (!unit) return;
+
+            unit.active = !unit.active;
+            renderUnits();
+        }
+
+        function renderUnits() {
+            const search = document.getElementById("unitSearch")
+                .value.trim().toLowerCase();
+
+            const statusFilter = document.getElementById("unitStatusFilter").value;
+
+            const filtered = units.filter(unit => {
+                const status = unit.active ? "Active" : "Inactive";
+
+                return unit.name.toLowerCase().includes(search) &&
+                    (statusFilter === "all" || status === statusFilter);
+            });
+
+            document.getElementById("unitRows").innerHTML = filtered.length
+                ? filtered.map(unit => `
+                    <tr>
+                        <td>
+                            <strong>${escapeUnitHtml(unit.name)}</strong>
+                        </td>
+                        <td>${escapeUnitHtml(unit.category)}</td>
+                        <td>
+                            <span class="status-badge status-paid">Enabled</span>
+                        </td>
+                        <td>
+                            <span class="status-badge ${
+                                unit.active ? "status-paid" : "status-pending"
+                            }">
+                                ${unit.active ? "Active" : "Inactive"}
+                            </span>
+                        </td>
+                        <td>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                <button type="button"
+                                    class="btn btn-sm btn-primary"
+                                    onclick="openUnitDashboard(${unit.id})">
+                                    View Dashboard →
+                                </button>
+
+                                <button type="button"
+                                    class="btn btn-sm btn-outline-secondary"
+                                    onclick="toggleUnitStatus(${unit.id})">
+                                    ${unit.active ? "Deactivate" : "Activate"}
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join("")
+                : `<tr>
+                    <td colspan="5" class="text-center py-5">
+                        No units match your search.
+                    </td>
+                   </tr>`;
+
+            document.getElementById("totalUnits").textContent = units.length;
+
+            document.getElementById("activeUnits").textContent =
+                units.filter(unit => unit.active).length;
+
+            document.getElementById("inactiveUnits").textContent =
+                units.filter(unit => !unit.active).length;
+        }
+
+        ["unitSearch", "unitStatusFilter"].forEach(id => {
+            const element = document.getElementById(id);
+            element.addEventListener("input", renderUnits);
+            element.addEventListener("change", renderUnits);
+        });
+
+        document.getElementById("unitModal").addEventListener("click", function (event) {
+            if (event.target === this) closeUnitForm();
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") closeUnitForm();
+        });
+
+        renderUnits();
+    </script>
+}

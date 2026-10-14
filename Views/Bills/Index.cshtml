@@ -1,0 +1,329 @@
+﻿
+@{
+    ViewData["Title"] = "Bills & Payments";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Bills &amp; Payments</h1>
+        <p>Track bills, payments and outstanding amounts across your organization.</p>
+    </div>
+
+    <button type="button" class="btn btn-primary" onclick="openBillForm()">
+        + Add Bill
+    </button>
+</div>
+
+<section class="summary-grid">
+    <article class="summary-card">
+        <div class="summary-card-top">
+            <span>Total Bills</span>
+            <span class="summary-icon">▤</span>
+        </div>
+        <h2 id="totalBills">0</h2>
+        <p>All recorded bills</p>
+    </article>
+
+    <article class="summary-card">
+        <div class="summary-card-top">
+            <span>Total Paid</span>
+            <span class="summary-icon">✓</span>
+        </div>
+        <h2 id="totalPaid">Rs. 0</h2>
+        <p>Payments recorded</p>
+    </article>
+
+    <article class="summary-card">
+        <div class="summary-card-top">
+            <span>Outstanding</span>
+            <span class="summary-icon">◷</span>
+        </div>
+        <h2 id="totalOutstanding">Rs. 0</h2>
+        <p>Remaining unpaid amount</p>
+    </article>
+
+    <article class="summary-card">
+        <div class="summary-card-top">
+            <span>Overdue Bills</span>
+            <span class="summary-icon">!</span>
+        </div>
+        <h2 id="overdueBills">0</h2>
+        <p>Past their due date and unpaid</p>
+    </article>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h3>All Bills</h3>
+            <p>Review bill details and payment progress.</p>
+        </div>
+    </div>
+
+    <div class="transaction-toolbar">
+        <input id="billSearch" type="search" class="form-control"
+               placeholder="Search bills..." />
+
+        <select id="billStatusFilter" class="form-select">
+            <option value="all">All statuses</option>
+            <option value="Unpaid">Unpaid</option>
+            <option value="Partially Paid">Partially Paid</option>
+            <option value="Paid">Paid</option>
+            <option value="Overdue">Overdue</option>
+        </select>
+
+        <select id="billUnitFilter" class="form-select">
+            <option value="all">All units</option>
+            <option value="School">School</option>
+            <option value="College">College</option>
+            <option value="BS Program">BS Program</option>
+            <option value="Training Center">Training Center</option>
+            <option value="Evening Academy">Evening Academy</option>
+        </select>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Bill</th>
+                    <th>Unit</th>
+                    <th>Due Date</th>
+                    <th>Total Amount</th>
+                    <th>Remaining</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="billRows">
+                <tr>
+                    <td colspan="7" class="text-center py-5">
+                        <strong>No bills recorded</strong>
+                        <p class="mb-0 mt-2">Add a bill to start tracking payments.</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <p class="preview-note">
+        UI preview only. Bills and payments are temporary until database
+        integration is implemented.
+    </p>
+</section>
+
+<div id="billModal" class="transaction-modal" hidden>
+    <form id="billForm" class="transaction-form">
+        <div class="form-heading">
+            <div>
+                <h2>Add Bill</h2>
+                <p>Enter the bill and its payment details.</p>
+            </div>
+            <button type="button" class="close-button"
+                    aria-label="Close form" onclick="closeBillForm()">×</button>
+        </div>
+
+        <label for="billTitle">Bill description</label>
+        <input id="billTitle" class="form-control" required maxlength="120"
+               placeholder="e.g. Electricity bill" />
+
+        <label for="billUnit">Organizational unit</label>
+        <select id="billUnit" class="form-select" required>
+            <option value="School">School</option>
+            <option value="College">College</option>
+            <option value="BS Program">BS Program</option>
+            <option value="Training Center">Training Center</option>
+            <option value="Evening Academy">Evening Academy</option>
+        </select>
+
+        <label for="billDueDate">Due date</label>
+        <input id="billDueDate" class="form-control" type="date" required />
+
+        <label for="billAmount">Total amount (PKR)</label>
+        <input id="billAmount" class="form-control" type="number"
+               min="0.01" step="0.01" required placeholder="Enter amount" />
+
+        <label for="billPaidAmount">Amount already paid (PKR)</label>
+        <input id="billPaidAmount" class="form-control" type="number"
+               min="0" step="0.01" value="0" required />
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-outline-secondary"
+                    onclick="closeBillForm()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Bill</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        const bills = [];
+
+        const billMoneyFormat = new Intl.NumberFormat("en-PK", {
+            maximumFractionDigits: 2
+        });
+
+        function billMoney(amount) {
+            return "Rs. " + billMoneyFormat.format(amount);
+        }
+
+        function escapeBillHtml(value) {
+            return String(value).replace(/[&<>"']/g, character => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            })[character]);
+        }
+
+        function getBillStatus(bill) {
+            if (bill.paid >= bill.amount) return "Paid";
+            if (bill.dueDate < new Date().toLocaleDateString("en-CA")) {
+                return "Overdue";
+            }
+            if (bill.paid > 0) return "Partially Paid";
+            return "Unpaid";
+        }
+
+        function openBillForm() {
+            document.getElementById("billModal").hidden = false;
+            document.getElementById("billDueDate").value =
+                new Date().toLocaleDateString("en-CA");
+            document.getElementById("billTitle").focus();
+        }
+
+        function closeBillForm() {
+            document.getElementById("billModal").hidden = true;
+        }
+
+        document.getElementById("billForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const amount = Number(document.getElementById("billAmount").value);
+            const paid = Number(document.getElementById("billPaidAmount").value);
+
+            if (!Number.isFinite(amount) || !Number.isFinite(paid) ||
+                amount <= 0 || paid < 0 || paid > amount) {
+                alert("Paid amount must be between zero and the total bill amount.");
+                return;
+            }
+
+            bills.push({
+                title: document.getElementById("billTitle").value.trim(),
+                unit: document.getElementById("billUnit").value,
+                dueDate: document.getElementById("billDueDate").value,
+                amount,
+                paid
+            });
+
+            this.reset();
+            closeBillForm();
+            renderBills();
+        });
+
+        function renderBills() {
+            const search = document.getElementById("billSearch")
+                .value.trim().toLowerCase();
+            const statusFilter = document.getElementById("billStatusFilter").value;
+            const unitFilter = document.getElementById("billUnitFilter").value;
+
+            const filtered = bills.filter(bill => {
+                const status = getBillStatus(bill);
+                const matchesStatus = statusFilter === "all" ||
+                    status === statusFilter ||
+                    (statusFilter === "Unpaid" && status === "Overdue");
+
+                return bill.title.toLowerCase().includes(search) &&
+                    matchesStatus &&
+                    (unitFilter === "all" || bill.unit === unitFilter);
+            });
+
+            const rows = document.getElementById("billRows");
+
+            rows.innerHTML = filtered.length
+                ? filtered.map(bill => {
+                    const status = getBillStatus(bill);
+                    const remaining = bill.amount - bill.paid;
+
+                    const statusClass = status === "Paid"
+                        ? "status-paid"
+                        : status === "Overdue"
+                            ? "status-warning"
+                            : "status-pending";
+
+                    return `
+                        <tr>
+                            <td><strong>${escapeBillHtml(bill.title)}</strong></td>
+                            <td>${escapeBillHtml(bill.unit)}</td>
+                            <td>${escapeBillHtml(bill.dueDate)}</td>
+                            <td>${billMoney(bill.amount)}</td>
+                            <td>${billMoney(remaining)}</td>
+                            <td><span class="status-badge ${statusClass}">
+                                ${escapeBillHtml(status)}
+                            </span></td>
+                            <td>
+                                ${remaining > 0
+                                    ? `<button type="button"
+                                        class="btn btn-sm btn-outline-primary"
+                                        onclick="recordBillPayment(${bills.indexOf(bill)})">
+                                        Record payment
+                                       </button>`
+                                    : `<span class="text-secondary">Complete</span>`}
+                            </td>
+                        </tr>`;
+                }).join("")
+                : `<tr><td colspan="7" class="text-center py-5">
+                    ${bills.length ? "No matching bills found." : "No bills recorded yet."}
+                   </td></tr>`;
+
+            const totalPaid = bills.reduce((sum, bill) => sum + bill.paid, 0);
+            const totalOutstanding = bills.reduce(
+                (sum, bill) => sum + Math.max(0, bill.amount - bill.paid), 0);
+            const overdueCount = bills.filter(
+                bill => getBillStatus(bill) === "Overdue").length;
+
+            document.getElementById("totalBills").textContent = bills.length;
+            document.getElementById("totalPaid").textContent = billMoney(totalPaid);
+            document.getElementById("totalOutstanding").textContent =
+                billMoney(totalOutstanding);
+            document.getElementById("overdueBills").textContent = overdueCount;
+        }
+
+        function recordBillPayment(index) {
+            const bill = bills[index];
+            const remaining = bill.amount - bill.paid;
+
+            const entered = prompt(
+                "Remaining balance: " + billMoney(remaining) +
+                "\nEnter the payment amount:"
+            );
+
+            if (entered === null || entered.trim() === "") return;
+
+            const payment = Number(entered);
+
+            if (!Number.isFinite(payment) || payment <= 0 || payment > remaining) {
+                alert("Enter a payment greater than zero and no more than the remaining balance.");
+                return;
+            }
+
+            bill.paid += payment;
+            renderBills();
+        }
+
+        ["billSearch", "billStatusFilter", "billUnitFilter"].forEach(id => {
+            const element = document.getElementById(id);
+            element.addEventListener("input", renderBills);
+            element.addEventListener("change", renderBills);
+        });
+
+        document.getElementById("billModal").addEventListener("click", function (event) {
+            if (event.target === this) closeBillForm();
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") closeBillForm();
+        });
+    </script>
+}
