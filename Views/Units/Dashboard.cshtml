@@ -139,6 +139,11 @@
     }
 </style>
 
+@{
+    var allowedUnits = (ViewData["AllowedUnits"] as List<string>) ?? new List<string>();
+    var currentUnit = ViewData["UnitName"]?.ToString() ?? "";
+}
+
 <div class="unit-dashboard">
     <div>
         <a asp-controller="Units" asp-action="Index" class="back-link">
@@ -147,28 +152,38 @@
 
         <div class="unit-heading">
             <div>
-                <div class="eyebrow">UNIT FINANCIAL WORKSPACE</div>
-                <h1 id="unitTitle">School Dashboard</h1>
-                <p class="subtext">Financial performance and cash position for this unit.</p>
+                <h1 id="unitTitle">@currentUnit Dashboard</h1>
+                <p class="subtext">Financial performance for this unit.</p>
             </div>
-
-            <span class="unit-label">
-                <span>●</span> Unit Dashboard
-            </span>
+            @if (allowedUnits.Count > 1)
+            {
+                <div class="d-flex align-items-center gap-2">
+                    <label for="unitSwitcher" class="small text-muted fw-semibold mb-0">Switch Unit:</label>
+                    <select id="unitSwitcher" class="form-select form-select-sm" style="min-width:160px;border-radius:8px;" onchange="window.location.href='/Units/Dashboard?name=' + encodeURIComponent(this.value)">
+                        @foreach (var u in allowedUnits)
+                        {
+                            if (u.Equals(currentUnit, StringComparison.OrdinalIgnoreCase))
+                            {
+                                <option value="@u" selected>@u</option>
+                            }
+                            else
+                            {
+                                <option value="@u">@u</option>
+                            }
+                        }
+                    </select>
+                </div>
+            }
         </div>
-    </div>
-
-    <div class="demo-notice">
-        <span>ⓘ</span>
-        <span><strong>DASHBOARD</strong> 
-        .</span>
     </div>
 
     <section class="unit-metrics">
         <article class="metric">
             <div class="metric-top">
                 <span>Period Revenue</span>
-                <span class="metric-icon" style="background:#eff6ff;color:#2563eb;">↗</span>
+                <span class="metric-icon" style="background:#eff6ff;color:#2563eb;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                </span>
             </div>
             <div class="metric-value" id="periodRevenue">Rs. 0</div>
             <p class="metric-note">Revenue in selected period</p>
@@ -177,7 +192,9 @@
         <article class="metric">
             <div class="metric-top">
                 <span>Period Expenses</span>
-                <span class="metric-icon" style="background:#fff7ed;color:#ea580c;">↘</span>
+                <span class="metric-icon" style="background:#fff7ed;color:#ea580c;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </span>
             </div>
             <div class="metric-value" id="periodExpenses">Rs. 0</div>
             <p class="metric-note">Expenses in selected period</p>
@@ -186,19 +203,23 @@
         <article class="metric">
             <div class="metric-top">
                 <span>All-Time Net Balance</span>
-                <span class="metric-icon" style="background:#ecfdf5;color:#059669;">₨</span>
+                <span class="metric-icon" style="background:#ecfdf5;color:#059669;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                </span>
             </div>
             <div class="metric-value" id="netBalance">Rs. 0</div>
-            <p class="metric-note">Cumulative revenue minus expenses</p>
+            <p class="metric-note">Cumulative net cash flow</p>
         </article>
 
         <article class="metric">
             <div class="metric-top">
                 <span>Outstanding Bills</span>
-                <span class="metric-icon" style="background:#fef2f2;color:#dc2626;">!</span>
+                <span class="metric-icon" style="background:#fef2f2;color:#dc2626;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                </span>
             </div>
             <div class="metric-value" id="outstandingBills">Rs. 0</div>
-            <p class="metric-note">Remaining unpaid amount, including overdue bills</p>
+            <p class="metric-note">Unpaid vendor obligations</p>
         </article>
     </section>
 
@@ -229,7 +250,7 @@
             <div class="panel-heading">
                 <div>
                     <h3>Financial Summary</h3>
-                    <p>Current illustrative position</p>
+                    <p>Current balance breakdown</p>
                 </div>
             </div>
 
@@ -258,7 +279,7 @@
         <div class="panel-heading">
             <div>
                 <h3>Recent Financial Activity</h3>
-                <p>Example entries for the selected unit</p>
+                <p>Latest recorded entries for this unit</p>
             </div>
         </div>
 
@@ -269,11 +290,13 @@
                         <th>Description</th>
                         <th>Type</th>
                         <th>Date</th>
-                        <th>Account</th>
+                        <th>Account / Method</th>
                         <th>Amount</th>
                     </tr>
                 </thead>
-                <tbody id="activityRows"></tbody>
+                <tbody id="activityRows">
+                    <tr><td colspan="5" style="text-align:center;padding:24px;color:#94a3b8;">Loading activity...</td></tr>
+                </tbody>
             </table>
         </div>
     </section>
@@ -281,82 +304,12 @@
 
 @section Scripts {
     <script>
-        const unitDemoData = {
-            "School": {
-                revenue: 450000, expenses: 285000, net: 620000,
-                outstanding: 38000, cash: 85000, bank: 535000,
-                months: [
-                    { label: "May", revenue: 380, expenses: 250 },
-                    { label: "Jun", revenue: 410, expenses: 290 },
-                    { label: "Jul", revenue: 390, expenses: 270 },
-                    { label: "Aug", revenue: 440, expenses: 300 },
-                    { label: "Sep", revenue: 420, expenses: 280 },
-                    { label: "Oct", revenue: 450, expenses: 285 }
-                ]
-            },
-            "College": {
-                revenue: 620000, expenses: 390000, net: 870000,
-                outstanding: 52000, cash: 120000, bank: 750000,
-                months: [
-                    { label: "May", revenue: 520, expenses: 340 },
-                    { label: "Jun", revenue: 560, expenses: 350 },
-                    { label: "Jul", revenue: 580, expenses: 370 },
-                    { label: "Aug", revenue: 600, expenses: 380 },
-                    { label: "Sep", revenue: 610, expenses: 385 },
-                    { label: "Oct", revenue: 620, expenses: 390 }
-                ]
-            },
-            "BS Program": {
-                revenue: 780000, expenses: 510000, net: 1150000,
-                outstanding: 65000, cash: 150000, bank: 1000000,
-                months: [
-                    { label: "May", revenue: 660, expenses: 440 },
-                    { label: "Jun", revenue: 690, expenses: 460 },
-                    { label: "Jul", revenue: 710, expenses: 475 },
-                    { label: "Aug", revenue: 740, expenses: 490 },
-                    { label: "Sep", revenue: 760, expenses: 500 },
-                    { label: "Oct", revenue: 780, expenses: 510 }
-                ]
-            },
-            "Training Center": {
-                revenue: 310000, expenses: 195000, net: 410000,
-                outstanding: 24000, cash: 60000, bank: 350000,
-                months: [
-                    { label: "May", revenue: 250, expenses: 170 },
-                    { label: "Jun", revenue: 270, expenses: 175 },
-                    { label: "Jul", revenue: 280, expenses: 180 },
-                    { label: "Aug", revenue: 290, expenses: 185 },
-                    { label: "Sep", revenue: 300, expenses: 190 },
-                    { label: "Oct", revenue: 310, expenses: 195 }
-                ]
-            },
-            "Evening Academy": {
-                revenue: 225000, expenses: 145000, net: 295000,
-                outstanding: 18000, cash: 45000, bank: 250000,
-                months: [
-                    { label: "May", revenue: 180, expenses: 120 },
-                    { label: "Jun", revenue: 190, expenses: 125 },
-                    { label: "Jul", revenue: 195, expenses: 130 },
-                    { label: "Aug", revenue: 210, expenses: 135 },
-                    { label: "Sep", revenue: 220, expenses: 140 },
-                    { label: "Oct", revenue: 225, expenses: 145 }
-                ]
-            }
-        };
-
-        const demoActivities = [
-            { description: "Monthly fee collection", type: "Revenue", date: "10 Oct 2026", account: "Main Bank", amount: 85000 },
-            { description: "Utility bill payment", type: "Expense", date: "08 Oct 2026", account: "Main Cash", amount: 18000 },
-            { description: "Learning materials", type: "Expense", date: "05 Oct 2026", account: "Main Bank", amount: 12500 },
-            { description: "Course fee collection", type: "Revenue", date: "02 Oct 2026", account: "Main Cash", amount: 32000 }
-        ];
-
         function formatCurrency(amount) {
-            return "Rs. " + Number(amount).toLocaleString("en-PK");
+            return "Rs. " + Number(amount || 0).toLocaleString("en-PK");
         }
 
         function safeText(value) {
-            return String(value).replace(/[&<>"']/g, character => ({
+            return String(value || "").replace(/[&<>"']/g, character => ({
                 "&": "&amp;",
                 "<": "&lt;",
                 ">": "&gt;",
@@ -365,111 +318,96 @@
             })[character]);
         }
 
-    let selectedUnitName = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewData["UnitName"] ?? "School"));
+        let selectedUnitName = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewData["UnitName"] ?? ""));
 
-        try {
-            const storedUnit = sessionStorage.getItem("selectedUnitDashboard");
-            if (storedUnit) {
-                const parsedUnit = JSON.parse(storedUnit);
-                if (parsedUnit && typeof parsedUnit.name === "string" &&
-                    unitDemoData[parsedUnit.name]) {
-                    selectedUnitName = parsedUnit.name;
-                }
+        async function loadUnitDashboard() {
+            if (!selectedUnitName) {
+                document.getElementById("unitTitle").textContent = "No Unit Selected";
+                return;
             }
-        } catch (error) {
-            selectedUnitName = "School";
-        }
-
-        function renderUnitDashboard() {
-            const unit = unitDemoData[selectedUnitName] || unitDemoData["School"];
             const period = document.getElementById("reportPeriod").value;
+            document.getElementById("unitTitle").textContent = selectedUnitName + " Dashboard";
 
-            document.getElementById("unitTitle").textContent =
-                selectedUnitName + " Dashboard";
+            try {
+                const res = await fetch(`/api/units/dashboard-data?name=${encodeURIComponent(selectedUnitName)}&period=${period}`);
+                if (res.status === 403) {
+                    alert("Access denied. You do not have permission to view metrics for this unit.");
+                    window.location.href = "/Units/Index";
+                    return;
+                }
+                if (!res.ok) throw new Error("Failed to load unit dashboard data");
+                const data = await res.json();
 
-            const periodRevenue = period === "lastMonth"
-                ? Math.round(unit.revenue * 0.96)
-                : period === "year"
-                    ? unit.revenue * 6
-                    : period === "all"
-                        ? unit.net + unit.expenses
-                        : unit.revenue;
+                document.getElementById("periodRevenue").textContent = formatCurrency(data.periodRevenue);
+                document.getElementById("periodExpenses").textContent = formatCurrency(data.periodExpenses);
+                document.getElementById("netBalance").textContent = formatCurrency(data.allTimeNet);
+                document.getElementById("outstandingBills").textContent = formatCurrency(data.outstandingBills);
 
-            const periodExpenses = period === "lastMonth"
-                ? Math.round(unit.expenses * 0.95)
-                : period === "year"
-                    ? unit.expenses * 6
-                    : period === "all"
-                        ? Math.max(0, unit.net + unit.expenses - unit.net)
-                        : unit.expenses;
+                document.getElementById("cashOnHand").textContent = formatCurrency(data.cashOnHand);
+                document.getElementById("bankBalance").textContent = formatCurrency(data.bankBalance);
+                document.getElementById("summaryOutstanding").textContent = formatCurrency(data.outstandingBills);
+                
+                const summaryNet = document.getElementById("summaryNet");
+                summaryNet.textContent = formatCurrency(data.allTimeNet);
+                if (data.allTimeNet >= 0) {
+                    summaryNet.className = "summary-amount positive";
+                } else {
+                    summaryNet.className = "summary-amount negative";
+                }
 
-            document.getElementById("periodRevenue").textContent =
-                formatCurrency(periodRevenue);
+                // Render Chart
+                const months = data.months || [];
+                const maxVal = Math.max(1, ...months.map(m => Math.max(Number(m.revenue) || 0, Number(m.expenses) || 0)));
 
-            document.getElementById("periodExpenses").textContent =
-                formatCurrency(periodExpenses);
-
-            document.getElementById("netBalance").textContent =
-                formatCurrency(unit.net);
-
-            document.getElementById("outstandingBills").textContent =
-                formatCurrency(unit.outstanding);
-
-            document.getElementById("cashOnHand").textContent =
-                formatCurrency(unit.cash);
-
-            document.getElementById("bankBalance").textContent =
-                formatCurrency(unit.bank);
-
-            document.getElementById("summaryOutstanding").textContent =
-                formatCurrency(unit.outstanding);
-
-            document.getElementById("summaryNet").textContent =
-                formatCurrency(unit.net);
-
-            document.getElementById("cashFlowChart").innerHTML =
-                unit.months.map(month => {
-                    const maximum = Math.max(
-                        ...unit.months.map(item => Math.max(item.revenue, item.expenses))
-                    );
-
-                    const revenueHeight = Math.max(3, month.revenue / maximum * 100);
-                    const expenseHeight = Math.max(3, month.expenses / maximum * 100);
+                document.getElementById("cashFlowChart").innerHTML = months.map(m => {
+                    const rev = Number(m.revenue) || 0;
+                    const exp = Number(m.expenses) || 0;
+                    const revenueHeight = Math.max(3, (rev / maxVal) * 100);
+                    const expenseHeight = Math.max(3, (exp / maxVal) * 100);
 
                     return `
                         <div class="chart-column">
                             <div class="bar-area">
                                 <div class="bar bar-revenue"
                                     style="height:${revenueHeight}%"
-                                    title="Revenue: ${month.revenue} thousand"></div>
+                                    title="Revenue: ${formatCurrency(rev)}"></div>
                                 <div class="bar bar-expense"
                                     style="height:${expenseHeight}%"
-                                    title="Expenses: ${month.expenses} thousand"></div>
+                                    title="Expenses: ${formatCurrency(exp)}"></div>
                             </div>
-                            <span class="chart-month">${safeText(month.label)}</span>
+                            <span class="chart-month">${safeText(m.label)}</span>
                         </div>
                     `;
                 }).join("");
 
-            document.getElementById("activityRows").innerHTML =
-                demoActivities.map(activity => `
-                    <tr>
-                        <td><strong>${safeText(activity.description)}</strong></td>
-                        <td>${safeText(activity.type)}</td>
-                        <td>${safeText(activity.date)}</td>
-                        <td>${safeText(activity.account)}</td>
-                        <td style="font-weight:700;color:${
-                            activity.type === "Revenue" ? "#059669" : "#dc2626"
-                        };">
-                            ${activity.type === "Revenue" ? "+" : "−"}${formatCurrency(activity.amount)}
-                        </td>
-                    </tr>
-                `).join("");
+                // Render Recent Activities
+                const activities = data.recentActivities || [];
+                const activityRows = document.getElementById("activityRows");
+                if (activities.length === 0) {
+                    activityRows.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:#94a3b8;">No recent transactions for ${safeText(selectedUnitName)}.</td></tr>`;
+                } else {
+                    activityRows.innerHTML = activities.map(act => `
+                        <tr>
+                            <td><strong>${safeText(act.description)}</strong></td>
+                            <td>
+                                <span style="display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;background:${act.type === 'Revenue' ? '#ecfdf5' : '#fef2f2'};color:${act.type === 'Revenue' ? '#059669' : '#dc2626'}">
+                                    ${safeText(act.type)}
+                                </span>
+                            </td>
+                            <td>${safeText(act.date)}</td>
+                            <td>${safeText(act.account)}</td>
+                            <td style="font-weight:700;color:${act.type === 'Revenue' ? '#059669' : '#dc2626'};">
+                                ${act.type === 'Revenue' ? '+' : '−'}${formatCurrency(act.amount)}
+                            </td>
+                        </tr>
+                    `).join("");
+                }
+            } catch (err) {
+                console.error("Dashboard load error:", err);
+            }
         }
 
-        document.getElementById("reportPeriod")
-            .addEventListener("change", renderUnitDashboard);
-
-        renderUnitDashboard();
+        document.getElementById("reportPeriod").addEventListener("change", loadUnitDashboard);
+        loadUnitDashboard();
     </script>
 }

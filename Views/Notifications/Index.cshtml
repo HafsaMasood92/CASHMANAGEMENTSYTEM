@@ -1,11 +1,12 @@
 @{
     ViewData["Title"] = "Notifications";
+    var userRole = Context.Session.GetString("UserRole") ?? "Super Admin";
 }
 
 <div class="page-header">
     <div>
         <h1>Notifications</h1>
-        <p>Stay updated on financial activity and items requiring your attention.</p>
+        <p>Review activity logs and items requiring attention.</p>
     </div>
 
     <button type="button" class="btn btn-outline-secondary"
@@ -18,38 +19,38 @@
     <article class="summary-card">
         <div class="summary-card-top">
             <span>Total Notifications</span>
-            <span class="summary-icon">▤</span>
+            <span class="summary-icon" style="background:#eff6ff;color:#2563eb;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            </span>
         </div>
         <h2 id="totalNotifications">0</h2>
-        <p>All recent activity</p>
+        <p>All recorded activities</p>
     </article>
 
     <article class="summary-card">
         <div class="summary-card-top">
             <span>Unread</span>
-            <span class="summary-icon">●</span>
+            <span class="summary-icon" style="background:#ecfdf5;color:#059669;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+            </span>
         </div>
         <h2 id="unreadNotifications">0</h2>
-        <p>Notifications not yet read</p>
+        <p>Requires acknowledgement</p>
     </article>
 
     <article class="summary-card">
         <div class="summary-card-top">
             <span>Action Required</span>
-            <span class="summary-icon">!</span>
+            <span class="summary-icon" style="background:#fffbeb;color:#d97706;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            </span>
         </div>
         <h2 id="actionNotifications">0</h2>
-        <p>Items requiring review</p>
+        <p>Pending administrative decisions</p>
     </article>
 </section>
 
 <section class="panel">
-    <div class="panel-header">
-        <div>
-            <h3>Notification center</h3>
-            <p>Review updates from across the organization.</p>
-        </div>
-    </div>
 
     <div class="transaction-toolbar">
         <input id="notificationSearch" type="search"
@@ -59,9 +60,11 @@
         <select id="notificationType" class="form-select">
             <option value="all">All types</option>
             <option value="Transaction">Financial activity</option>
+            <option value="Approval">Deletion requests & Approvals</option>
             <option value="Deletion">Deletion requests</option>
             <option value="Bill">Bills & payments</option>
             <option value="System">System updates</option>
+            <option value="Audit">Audit Logs</option>
         </select>
 
         <select id="notificationStatus" class="form-select">
@@ -79,79 +82,16 @@
         <h3>No notifications found</h3>
         <p>Try changing your search or filters.</p>
     </div>
-
-    <p class="preview-note">
-        Preview only: notification changes are temporary and reset on refresh.
-    </p>
 </section>
 
 @section Scripts {
     <script>
-        const notifications = [
-            {
-                id: 1,
-                type: "Deletion",
-                title: "Deletion request requires approval",
-                message: "An accountant has requested deletion of a financial entry. Review the request before approving or rejecting it.",
-                unit: "School",
-                time: "Just now",
-                unread: true,
-                actionRequired: true
-            },
-            {
-                id: 2,
-                type: "Bill",
-                title: "Bill is overdue",
-                message: "A College bill has passed its due date and still has an unpaid balance.",
-                unit: "College",
-                time: "Today",
-                unread: true,
-                actionRequired: true
-            },
-            {
-                id: 3,
-                type: "Transaction",
-                title: "New expense recorded",
-                message: "A new expense entry was added and included in the current financial totals.",
-                unit: "BS Program",
-                time: "Today",
-                unread: true,
-                actionRequired: false
-            },
-            {
-                id: 4,
-                type: "Transaction",
-                title: "Revenue entry updated",
-                message: "An accountant edited a revenue entry. The updated amount is reflected in the totals.",
-                unit: "Training Center",
-                time: "Yesterday",
-                unread: false,
-                actionRequired: false
-            },
-            {
-                id: 5,
-                type: "Bill",
-                title: "Partial bill payment recorded",
-                message: "A bill payment was recorded. The remaining unpaid amount is still outstanding.",
-                unit: "Evening Academy",
-                time: "Yesterday",
-                unread: false,
-                actionRequired: false
-            },
-            {
-                id: 6,
-                type: "System",
-                title: "Account activity recorded",
-                message: "Recent activity has been recorded for review and audit purposes.",
-                unit: "All Units",
-                time: "2 days ago",
-                unread: false,
-                actionRequired: false
-            }
-        ];
+        let liveNotifications = [];
+        const currentUserRole = '@userRole';
+        const canApprove = currentUserRole === "Organization Owner" || currentUserRole === "Organization Admin";
 
         function escapeNotificationHtml(value) {
-            return String(value).replace(/[&<>"']/g, character => ({
+            return String(value ?? "").replace(/[&<>"']/g, character => ({
                 "&": "&amp;",
                 "<": "&lt;",
                 ">": "&gt;",
@@ -162,173 +102,232 @@
 
         function notificationIcon(type) {
             const icons = {
-                Transaction: "↕",
-                Deletion: "!",
-                Bill: "▤",
-                System: "⚙"
+                Transaction: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>`,
+                Approval: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`,
+                Deletion: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
+                Bill: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>`,
+                System: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`,
+                Audit: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>`
             };
 
-            return icons[type] || "•";
+            return icons[type] || `<span style="font-size:14px;">●</span>`;
         }
 
         function notificationClass(type) {
             const classes = {
                 Transaction: "status-paid",
+                Approval: "status-pending",
                 Deletion: "status-pending",
                 Bill: "status-overdue",
-                System: "status-paid"
+                System: "status-paid",
+                Audit: "status-paid"
             };
 
             return classes[type] || "status-pending";
         }
 
-        function markNotificationRead(id) {
-            const item = notifications.find(n => n.id === id);
+        async function markNotificationRead(id) {
+            try {
+                const res = await fetch("/api/notifications/mark-read", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id: Number(id) })
+                });
 
-            if (item) {
-                item.unread = false;
-                renderNotifications();
+                if (res.ok) {
+                    await loadNotifications();
+                }
+            } catch (err) {
+                console.error("Mark read error:", err);
             }
         }
 
-        function markAllRead() {
-            notifications.forEach(item => {
-                item.unread = false;
-            });
+        async function markAllRead() {
+            try {
+                const res = await fetch("/api/notifications/mark-all-read", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" }
+                });
 
-            renderNotifications();
+                if (res.ok) {
+                    await loadNotifications();
+                }
+            } catch (err) {
+                console.error("Mark all read error:", err);
+            }
         }
 
-        function renderNotifications() {
-            const search = document.getElementById("notificationSearch")
-                .value.trim().toLowerCase();
-
+        async function loadNotifications() {
+            const search = document.getElementById("notificationSearch").value.trim();
             const typeFilter = document.getElementById("notificationType").value;
             const statusFilter = document.getElementById("notificationStatus").value;
 
-            const filtered = notifications.filter(item => {
-                const searchableText =
-                    `${item.title} ${item.message} ${item.unit} ${item.type}`
-                        .toLowerCase();
+            try {
+                const params = new URLSearchParams({
+                    search: search,
+                    type: typeFilter,
+                    status: statusFilter
+                });
 
-                const matchesSearch = searchableText.includes(search);
-                const matchesType =
-                    typeFilter === "all" || item.type === typeFilter;
+                const res = await fetch(`/api/notifications?${params.toString()}`);
+                if (!res.ok) throw new Error("Failed to fetch notifications");
+                const data = await res.json();
 
-                let matchesStatus = true;
+                liveNotifications = data.items || [];
 
-                if (statusFilter === "unread") {
-                    matchesStatus = item.unread;
-                } else if (statusFilter === "read") {
-                    matchesStatus = !item.unread;
-                } else if (statusFilter === "action") {
-                    matchesStatus = item.actionRequired;
-                }
+                document.getElementById("totalNotifications").textContent = data.totalCount ?? 0;
+                document.getElementById("unreadNotifications").textContent = data.unreadCount ?? 0;
+                document.getElementById("actionNotifications").textContent = data.actionCount ?? 0;
 
-                return matchesSearch && matchesType && matchesStatus;
-            });
+                renderList();
+            } catch (err) {
+                console.error("Error loading notifications:", err);
+            }
+        }
 
-            document.getElementById("notificationList").innerHTML =
-                filtered.map(item => `
-                    <article style="
+        function renderList() {
+            const container = document.getElementById("notificationList");
+            const emptyEl = document.getElementById("emptyNotifications");
+
+            if (liveNotifications.length === 0) {
+                container.innerHTML = "";
+                emptyEl.hidden = false;
+                return;
+            }
+
+            emptyEl.hidden = true;
+            container.innerHTML = liveNotifications.map(item => `
+                <article style="
+                    display:flex;
+                    gap:16px;
+                    align-items:flex-start;
+                    padding:20px 4px;
+                    border-bottom:1px solid #e5e7eb;
+                    background:${item.unread ? "#f8fbff" : "transparent"};
+                ">
+                    <div style="
+                        width:42px;
+                        height:42px;
+                        flex-shrink:0;
                         display:flex;
-                        gap:16px;
-                        align-items:flex-start;
-                        padding:20px 4px;
-                        border-bottom:1px solid #e5e7eb;
-                        background:${item.unread ? "#f8fbff" : "transparent"};
+                        align-items:center;
+                        justify-content:center;
+                        border-radius:12px;
+                        background:#eef2ff;
+                        color:#334155;
+                        font-size:20px;
+                        font-weight:700;
                     ">
+                        ${notificationIcon(item.type)}
+                    </div>
+
+                    <div style="flex:1;min-width:0;">
                         <div style="
-                            width:42px;
-                            height:42px;
-                            flex-shrink:0;
+                            display:flex;
+                            justify-content:space-between;
+                            gap:12px;
+                            flex-wrap:wrap;
+                        ">
+                            <strong>${escapeNotificationHtml(item.title)}</strong>
+                            <span style="font-size:12px;color:#64748b;">
+                                ${escapeNotificationHtml(item.time)}
+                            </span>
+                        </div>
+
+                        <p style="margin:8px 0;color:#64748b;">
+                            ${escapeNotificationHtml(item.message)}
+                        </p>
+
+                        <div style="
                             display:flex;
                             align-items:center;
-                            justify-content:center;
-                            border-radius:12px;
-                            background:#eef2ff;
-                            color:#334155;
-                            font-size:20px;
-                            font-weight:700;
+                            gap:8px;
+                            flex-wrap:wrap;
                         ">
-                            ${notificationIcon(item.type)}
-                        </div>
+                            <span class="status-badge ${notificationClass(item.type)}">
+                                ${escapeNotificationHtml(item.type)}
+                            </span>
 
-                        <div style="flex:1;min-width:0;">
-                            <div style="
-                                display:flex;
-                                justify-content:space-between;
-                                gap:12px;
-                                flex-wrap:wrap;
-                            ">
-                                <strong>${escapeNotificationHtml(item.title)}</strong>
-                                <span style="font-size:12px;color:#64748b;">
-                                    ${escapeNotificationHtml(item.time)}
-                                </span>
-                            </div>
+                            <span style="font-size:12px;color:#64748b;">
+                                ${escapeNotificationHtml(item.unit || "All Units")}
+                            </span>
 
-                            <p style="margin:8px 0;color:#64748b;">
-                                ${escapeNotificationHtml(item.message)}
-                            </p>
+                            ${item.actionRequired
+                                ? `<span class="status-badge status-overdue">Action required</span>`
+                                : ""}
 
-                            <div style="
-                                display:flex;
-                                align-items:center;
-                                gap:8px;
-                                flex-wrap:wrap;
-                            ">
-                                <span class="status-badge ${notificationClass(item.type)}">
-                                    ${escapeNotificationHtml(item.type)}
-                                </span>
-
-                                <span style="font-size:12px;color:#64748b;">
-                                    ${escapeNotificationHtml(item.unit)}
-                                </span>
-
-                                ${item.actionRequired
-                                    ? `<span class="status-badge status-overdue">Action required</span>`
-                                    : ""}
-
-                                ${item.unread
-                                    ? `<span style="font-size:12px;color:#2563eb;font-weight:600;">Unread</span>`
-                                    : ""}
-                            </div>
-                        </div>
-
-                        <div>
                             ${item.unread
-                                ? `<button type="button"
-                                    class="btn btn-sm btn-outline-secondary"
-                                    onclick="markNotificationRead(${item.id})">
-                                    Mark read
-                                   </button>`
+                                ? `<span style="font-size:12px;color:#2563eb;font-weight:600;">Unread</span>`
                                 : ""}
                         </div>
-                    </article>
-                `).join("");
+                    </div>
 
-            document.getElementById("emptyNotifications").hidden =
-                filtered.length !== 0;
+                    <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+                        ${item.actionRequired && (item.type === "Approval" || item.type === "Deletion") && canApprove
+                            ? `<div style="display:flex;gap:6px;">
+                                <button type="button" class="btn btn-sm btn-success" onclick="approveDeletion(${item.id})">✓ Approve</button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="rejectDeletion(${item.id})">✕ Reject</button>
+                               </div>`
+                            : ""}
+                        ${item.unread
+                            ? `<button type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                onclick="markNotificationRead(${item.id})">
+                                Mark read
+                               </button>`
+                            : ""}
+                    </div>
+                </article>
+            `).join("");
+        }
 
-            document.getElementById("totalNotifications").textContent =
-                notifications.length;
+        async function approveDeletion(id) {
+            if (!confirm("Approve this deletion request? The transaction will be deleted and an audit log recorded.")) return;
+            try {
+                const res = await fetch("/api/notifications/approve-deletion", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id: Number(id) })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    await loadNotifications();
+                } else {
+                    alert(result.message || "Failed to approve deletion.");
+                }
+            } catch (err) {
+                alert("Network error approving deletion.");
+            }
+        }
 
-            document.getElementById("unreadNotifications").textContent =
-                notifications.filter(item => item.unread).length;
-
-            document.getElementById("actionNotifications").textContent =
-                notifications.filter(item => item.actionRequired).length;
+        async function rejectDeletion(id) {
+            if (!confirm("Reject this deletion request?")) return;
+            try {
+                const res = await fetch("/api/notifications/reject-deletion", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id: Number(id) })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    await loadNotifications();
+                } else {
+                    alert(result.message || "Failed to reject deletion.");
+                }
+            } catch (err) {
+                alert("Network error rejecting deletion.");
+            }
         }
 
         document.getElementById("notificationSearch")
-            .addEventListener("input", renderNotifications);
+            .addEventListener("input", loadNotifications);
 
         document.getElementById("notificationType")
-            .addEventListener("change", renderNotifications);
+            .addEventListener("change", loadNotifications);
 
         document.getElementById("notificationStatus")
-            .addEventListener("change", renderNotifications);
+            .addEventListener("change", loadNotifications);
 
-        renderNotifications();
+        loadNotifications();
     </script>
 }

@@ -1,24 +1,37 @@
-﻿
+
 @{
     ViewData["Title"] = "Bills & Payments";
+    var allowedUnits = (ViewData["AllowedUnits"] as List<string>) ?? new List<string>();
 }
 
-<div class="page-header">
-    <div>
-        <h1>Bills &amp; Payments</h1>
-        <p>Track bills, payments and outstanding amounts across your organization.</p>
-    </div>
-
+<div class="d-flex align-items-center justify-content-between mb-4 border-bottom pb-3">
+    <ul class="nav nav-pills">
+        <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="/Bills">Bills &amp; Payables</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-secondary" href="/Transactions/Expenses">Expense Ledger</a>
+        </li>
+    </ul>
     <button type="button" class="btn btn-primary" onclick="openBillForm()">
         + Add Bill
     </button>
+</div>
+
+<div class="page-header mb-4">
+    <div>
+        <h1 class="h3 mb-1">Bills &amp; Payables</h1>
+        <p class="text-muted mb-0">Track vendor bills, partial and full payments, and outstanding balances.</p>
+    </div>
 </div>
 
 <section class="summary-grid">
     <article class="summary-card">
         <div class="summary-card-top">
             <span>Total Bills</span>
-            <span class="summary-icon">▤</span>
+            <span class="summary-icon" style="background:#eff6ff;color:#2563eb;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+            </span>
         </div>
         <h2 id="totalBills">0</h2>
         <p>All recorded bills</p>
@@ -27,38 +40,38 @@
     <article class="summary-card">
         <div class="summary-card-top">
             <span>Total Paid</span>
-            <span class="summary-icon">✓</span>
+            <span class="summary-icon" style="background:#ecfdf5;color:#059669;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            </span>
         </div>
         <h2 id="totalPaid">Rs. 0</h2>
-        <p>Payments recorded</p>
+        <p>Disbursed vendor payments</p>
     </article>
 
     <article class="summary-card">
         <div class="summary-card-top">
             <span>Outstanding</span>
-            <span class="summary-icon">◷</span>
+            <span class="summary-icon" style="background:#fffbeb;color:#d97706;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </span>
         </div>
         <h2 id="totalOutstanding">Rs. 0</h2>
-        <p>Remaining unpaid amount</p>
+        <p>Pending balance payable</p>
     </article>
 
     <article class="summary-card">
         <div class="summary-card-top">
             <span>Overdue Bills</span>
-            <span class="summary-icon">!</span>
+            <span class="summary-icon" style="background:#fef2f2;color:#dc2626;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            </span>
         </div>
         <h2 id="overdueBills">0</h2>
-        <p>Past their due date and unpaid</p>
+        <p>Past due date</p>
     </article>
 </section>
 
 <section class="panel">
-    <div class="panel-header">
-        <div>
-            <h3>All Bills</h3>
-            <p>Review bill details and payment progress.</p>
-        </div>
-    </div>
 
     <div class="transaction-toolbar">
         <input id="billSearch" type="search" class="form-control"
@@ -72,13 +85,19 @@
             <option value="Overdue">Overdue</option>
         </select>
 
+        <select id="billCategoryFilter" class="form-select">
+            <option value="all">All categories</option>
+        </select>
+
         <select id="billUnitFilter" class="form-select">
-            <option value="all">All units</option>
-            <option value="School">School</option>
-            <option value="College">College</option>
-            <option value="BS Program">BS Program</option>
-            <option value="Training Center">Training Center</option>
-            <option value="Evening Academy">Evening Academy</option>
+            @if (allowedUnits.Count > 1)
+            {
+                <option value="all">All units</option>
+            }
+            @foreach (var u in allowedUnits)
+            {
+                <option value="@u">@u</option>
+            }
         </select>
     </div>
 
@@ -87,6 +106,7 @@
             <thead>
                 <tr>
                     <th>Bill</th>
+                    <th>Category</th>
                     <th>Unit</th>
                     <th>Due Date</th>
                     <th>Total Amount</th>
@@ -97,7 +117,7 @@
             </thead>
             <tbody id="billRows">
                 <tr>
-                    <td colspan="7" class="text-center py-5">
+                    <td colspan="8" class="text-center py-5">
                         <strong>No bills recorded</strong>
                         <p class="mb-0 mt-2">Add a bill to start tracking payments.</p>
                     </td>
@@ -105,15 +125,11 @@
             </tbody>
         </table>
     </div>
-
-    <p class="preview-note">
-        UI preview only. Bills and payments are temporary until database
-        integration is implemented.
-    </p>
 </section>
 
 <div id="billModal" class="transaction-modal" hidden>
     <form id="billForm" class="transaction-form">
+        @Html.AntiForgeryToken()
         <div class="form-heading">
             <div>
                 <h2>Add Bill</h2>
@@ -124,66 +140,102 @@
         </div>
 
         <label for="billTitle">Bill description</label>
-        <input id="billTitle" class="form-control" required maxlength="120"
+        <input id="billTitle" name="title" class="form-control" required maxlength="120"
                placeholder="e.g. Electricity bill" />
 
         <label for="billUnit">Organizational unit</label>
-        <select id="billUnit" class="form-select" required>
-            <option value="School">School</option>
-            <option value="College">College</option>
-            <option value="BS Program">BS Program</option>
-            <option value="Training Center">Training Center</option>
-            <option value="Evening Academy">Evening Academy</option>
+        <select id="billUnit" name="unit" class="form-select" required>
+            @foreach (var u in allowedUnits)
+            {
+                <option value="@u">@u</option>
+            }
+        </select>
+
+        <label for="billCategory">Bill category</label>
+        <select id="billCategory" name="category" class="form-select" required>
+            <option value="" disabled selected>Select category</option>
         </select>
 
         <label for="billDueDate">Due date</label>
-        <input id="billDueDate" class="form-control" type="date" required />
+        <input id="billDueDate" name="dueDate" class="form-control" type="date" required />
 
         <label for="billAmount">Total amount (PKR)</label>
-        <input id="billAmount" class="form-control" type="number"
+        <input id="billAmount" name="amount" class="form-control" type="number"
                min="0.01" step="0.01" required placeholder="Enter amount" />
 
         <label for="billPaidAmount">Amount already paid (PKR)</label>
-        <input id="billPaidAmount" class="form-control" type="number"
+        <input id="billPaidAmount" name="paid" class="form-control" type="number"
                min="0" step="0.01" value="0" required />
 
         <div class="form-actions">
             <button type="button" class="btn btn-outline-secondary"
                     onclick="closeBillForm()">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save Bill</button>
+            <button type="submit" class="btn btn-primary" id="saveBillBtn">Save Bill</button>
+        </div>
+    </form>
+</div>
+
+<div id="paymentModal" class="transaction-modal" hidden>
+    <form id="paymentForm" class="transaction-form">
+        @Html.AntiForgeryToken()
+        <input type="hidden" id="payBillId" name="billId" />
+        <div class="form-heading">
+            <div>
+                <h2>Record Bill Payment</h2>
+                <p id="payBillSubtitle">Enter payment details for the selected bill.</p>
+            </div>
+            <button type="button" class="close-button"
+                    aria-label="Close form" onclick="closePaymentForm()">×</button>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label text-muted">Bill Description</label>
+            <div id="payBillTitle" class="fw-bold fs-6"></div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label text-muted">Outstanding Remaining</label>
+            <div id="payBillRemaining" class="fw-bold text-danger fs-5"></div>
+        </div>
+
+        <label for="payAmount">Payment amount (PKR)</label>
+        <input id="payAmount" name="paymentAmount" class="form-control" type="number"
+               min="0.01" step="0.01" required placeholder="Enter amount to pay" />
+
+        <label for="payMethod">Payment method / Account</label>
+        <select id="payMethod" name="paymentMethod" class="form-select" required>
+            <option value="Bank Account">Bank Account</option>
+            <option value="Cash">Cash</option>
+        </select>
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-outline-secondary"
+                    onclick="closePaymentForm()">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="savePaymentBtn">Confirm Payment</button>
         </div>
     </form>
 </div>
 
 @section Scripts {
     <script>
-        const bills = [];
+        let bills = [];
 
         const billMoneyFormat = new Intl.NumberFormat("en-PK", {
             maximumFractionDigits: 2
         });
 
         function billMoney(amount) {
-            return "Rs. " + billMoneyFormat.format(amount);
+            return "Rs. " + billMoneyFormat.format(amount || 0);
         }
 
         function escapeBillHtml(value) {
-            return String(value).replace(/[&<>"']/g, character => ({
+            return String(value ?? "").replace(/[&<>"']/g, character => ({
                 "&": "&amp;",
                 "<": "&lt;",
                 ">": "&gt;",
                 '"': "&quot;",
                 "'": "&#39;"
             })[character]);
-        }
-
-        function getBillStatus(bill) {
-            if (bill.paid >= bill.amount) return "Paid";
-            if (bill.dueDate < new Date().toLocaleDateString("en-CA")) {
-                return "Overdue";
-            }
-            if (bill.paid > 0) return "Partially Paid";
-            return "Unpaid";
         }
 
         function openBillForm() {
@@ -197,7 +249,19 @@
             document.getElementById("billModal").hidden = true;
         }
 
-        document.getElementById("billForm").addEventListener("submit", function (event) {
+        async function fetchBillsFromDb() {
+            try {
+                const response = await fetch("/api/bills");
+                if (!response.ok) throw new Error("Failed to load bills");
+                const data = await response.json();
+                bills = data.items || [];
+                renderBills();
+            } catch (err) {
+                console.error("Error loading bills:", err);
+            }
+        }
+
+        document.getElementById("billForm").addEventListener("submit", async function (event) {
             event.preventDefault();
 
             const amount = Number(document.getElementById("billAmount").value);
@@ -209,33 +273,100 @@
                 return;
             }
 
-            bills.push({
-                title: document.getElementById("billTitle").value.trim(),
-                unit: document.getElementById("billUnit").value,
-                dueDate: document.getElementById("billDueDate").value,
-                amount,
-                paid
-            });
+            const btn = document.getElementById("saveBillBtn");
+            btn.disabled = true;
+            btn.textContent = "Saving...";
 
-            this.reset();
-            closeBillForm();
-            renderBills();
+            const formData = new FormData(this);
+
+            try {
+                const response = await fetch("/api/bills", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    this.reset();
+                    closeBillForm();
+                    await fetchBillsFromDb();
+                } else {
+                    alert(result.message || "Failed to save bill.");
+                }
+            } catch (err) {
+                alert("Network error while saving bill.");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Save Bill";
+            }
         });
+
+        async function loadCategories() {
+            try {
+                const response = await fetch("/api/categories?type=bill");
+                let categories = [];
+                if (response.ok) {
+                    const data = await response.json();
+                    categories = data.items || data.categories || [];
+                }
+                const modalSelect = document.getElementById("billCategory");
+                const filterSelect = document.getElementById("billCategoryFilter");
+                if (modalSelect) {
+                    if (categories.length > 0) {
+                        modalSelect.innerHTML = categories.map(c => `<option value="${escapeBillHtml(c.name)}">${escapeBillHtml(c.name)}</option>`).join("");
+                    } else {
+                        modalSelect.innerHTML = `<option value="" disabled selected>No categories defined (add in Settings)</option>`;
+                    }
+                }
+                if (filterSelect) {
+                    const currentVal = filterSelect.value;
+                    filterSelect.innerHTML = `<option value="all">All categories</option>` +
+                        categories.map(c => `<option value="${escapeBillHtml(c.name)}">${escapeBillHtml(c.name)}</option>`).join("");
+                    filterSelect.value = currentVal;
+                }
+            } catch (err) {
+                console.error("Failed to load bill categories:", err);
+            }
+        }
+
+        async function loadPaymentAccounts() {
+            try {
+                const response = await fetch("/api/bankaccounts");
+                if (response.ok) {
+                    const data = await response.json();
+                    const accounts = data.items || [];
+                    const paySelect = document.getElementById("payMethod");
+                    if (paySelect) {
+                        let html = `<option value="Cash">Cash</option>`;
+                        accounts.forEach(a => {
+                            html += `<option value="${escapeBillHtml(a.accountName)}">${escapeBillHtml(a.accountName)} (${escapeBillHtml(a.bankName)})</option>`;
+                        });
+                        paySelect.innerHTML = html;
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load payment accounts:", err);
+            }
+        }
 
         function renderBills() {
             const search = document.getElementById("billSearch")
                 .value.trim().toLowerCase();
             const statusFilter = document.getElementById("billStatusFilter").value;
+            const categoryFilter = document.getElementById("billCategoryFilter") ? document.getElementById("billCategoryFilter").value : "all";
             const unitFilter = document.getElementById("billUnitFilter").value;
 
             const filtered = bills.filter(bill => {
-                const status = getBillStatus(bill);
                 const matchesStatus = statusFilter === "all" ||
-                    status === statusFilter ||
-                    (statusFilter === "Unpaid" && status === "Overdue");
+                    bill.status === statusFilter ||
+                    (statusFilter === "Unpaid" && bill.status === "Overdue");
 
-                return bill.title.toLowerCase().includes(search) &&
+                const matchesCategory = categoryFilter === "all" ||
+                    (bill.category || "General") === categoryFilter;
+
+                return (bill.title.toLowerCase().includes(search) || (bill.category && bill.category.toLowerCase().includes(search))) &&
                     matchesStatus &&
+                    matchesCategory &&
                     (unitFilter === "all" || bill.unit === unitFilter);
             });
 
@@ -243,87 +374,130 @@
 
             rows.innerHTML = filtered.length
                 ? filtered.map(bill => {
-                    const status = getBillStatus(bill);
-                    const remaining = bill.amount - bill.paid;
-
-                    const statusClass = status === "Paid"
+                    const statusClass = bill.status === "Paid"
                         ? "status-paid"
-                        : status === "Overdue"
+                        : bill.status === "Overdue"
                             ? "status-warning"
                             : "status-pending";
 
                     return `
                         <tr>
                             <td><strong>${escapeBillHtml(bill.title)}</strong></td>
+                            <td><span class="badge bg-light text-dark border">${escapeBillHtml(bill.category || "General")}</span></td>
                             <td>${escapeBillHtml(bill.unit)}</td>
                             <td>${escapeBillHtml(bill.dueDate)}</td>
                             <td>${billMoney(bill.amount)}</td>
-                            <td>${billMoney(remaining)}</td>
+                            <td>${billMoney(bill.remaining)}</td>
                             <td><span class="status-badge ${statusClass}">
-                                ${escapeBillHtml(status)}
+                                ${escapeBillHtml(bill.status)}
                             </span></td>
                             <td>
-                                ${remaining > 0
+                                ${bill.remaining > 0
                                     ? `<button type="button"
                                         class="btn btn-sm btn-outline-primary"
-                                        onclick="recordBillPayment(${bills.indexOf(bill)})">
+                                        onclick="openPaymentModal(${bill.id}, ${bill.remaining}, '${escapeBillHtml(bill.title)}')">
                                         Record payment
                                        </button>`
                                     : `<span class="text-secondary">Complete</span>`}
                             </td>
                         </tr>`;
                 }).join("")
-                : `<tr><td colspan="7" class="text-center py-5">
+                : `<tr><td colspan="8" class="text-center py-5">
                     ${bills.length ? "No matching bills found." : "No bills recorded yet."}
                    </td></tr>`;
 
-            const totalPaid = bills.reduce((sum, bill) => sum + bill.paid, 0);
-            const totalOutstanding = bills.reduce(
-                (sum, bill) => sum + Math.max(0, bill.amount - bill.paid), 0);
-            const overdueCount = bills.filter(
-                bill => getBillStatus(bill) === "Overdue").length;
+            const totalPaid = filtered.reduce((sum, bill) => sum + bill.paid, 0);
+            const totalOutstanding = filtered.reduce(
+                (sum, bill) => sum + Math.max(0, bill.remaining), 0);
+            const overdueCount = filtered.filter(
+                bill => bill.status === "Overdue").length;
 
-            document.getElementById("totalBills").textContent = bills.length;
+            document.getElementById("totalBills").textContent = filtered.length;
             document.getElementById("totalPaid").textContent = billMoney(totalPaid);
             document.getElementById("totalOutstanding").textContent =
                 billMoney(totalOutstanding);
             document.getElementById("overdueBills").textContent = overdueCount;
         }
 
-        function recordBillPayment(index) {
-            const bill = bills[index];
-            const remaining = bill.amount - bill.paid;
+        let currentPaymentRemaining = 0;
 
-            const entered = prompt(
-                "Remaining balance: " + billMoney(remaining) +
-                "\nEnter the payment amount:"
-            );
+        function openPaymentModal(billId, remaining, title) {
+            currentPaymentRemaining = remaining;
+            document.getElementById("payBillId").value = billId;
+            document.getElementById("payBillTitle").textContent = title;
+            document.getElementById("payBillRemaining").textContent = billMoney(remaining);
+            const amountInput = document.getElementById("payAmount");
+            amountInput.max = remaining;
+            amountInput.value = remaining;
+            document.getElementById("paymentModal").hidden = false;
+            amountInput.focus();
+        }
 
-            if (entered === null || entered.trim() === "") return;
+        function closePaymentForm() {
+            document.getElementById("paymentModal").hidden = true;
+        }
 
-            const payment = Number(entered);
+        document.getElementById("paymentForm").addEventListener("submit", async function (event) {
+            event.preventDefault();
 
-            if (!Number.isFinite(payment) || payment <= 0 || payment > remaining) {
-                alert("Enter a payment greater than zero and no more than the remaining balance.");
+            const payment = Number(document.getElementById("payAmount").value);
+            if (!Number.isFinite(payment) || payment <= 0 || payment > currentPaymentRemaining) {
+                alert("Enter a payment greater than zero and no more than the remaining balance (" + billMoney(currentPaymentRemaining) + ").");
                 return;
             }
 
-            bill.paid += payment;
-            renderBills();
-        }
+            const btn = document.getElementById("savePaymentBtn");
+            btn.disabled = true;
+            btn.textContent = "Recording...";
 
-        ["billSearch", "billStatusFilter", "billUnitFilter"].forEach(id => {
+            const formData = new FormData(this);
+
+            try {
+                const response = await fetch("/api/bills/record-payment", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    closePaymentForm();
+                    await fetchBillsFromDb();
+                } else {
+                    alert(result.message || "Failed to record payment.");
+                }
+            } catch (err) {
+                alert("Network error while recording bill payment.");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Confirm Payment";
+            }
+        });
+
+        ["billSearch", "billStatusFilter", "billCategoryFilter", "billUnitFilter"].forEach(id => {
             const element = document.getElementById(id);
-            element.addEventListener("input", renderBills);
-            element.addEventListener("change", renderBills);
+            if (element) {
+                element.addEventListener("input", renderBills);
+                element.addEventListener("change", renderBills);
+            }
         });
 
         document.getElementById("billModal").addEventListener("click", function (event) {
             if (event.target === this) closeBillForm();
         });
 
-        document.addEventListener("keydown", function (event) {
-            if (event.key === "Escape") closeBillForm();
+        document.getElementById("paymentModal").addEventListener("click", function (event) {
+            if (event.target === this) closePaymentForm();
         });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") {
+                closeBillForm();
+                closePaymentForm();
+            }
+        });
+
+        loadCategories();
+        loadPaymentAccounts();
+        fetchBillsFromDb();
     </script>
 }

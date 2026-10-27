@@ -1,701 +1,602 @@
-﻿
-@{
-    ViewData["Title"] = "Overview";
+@using Microsoft.AspNetCore.Http
 
-    var loggedInName = User.Identity?.Name;
-    var displayName = string.IsNullOrWhiteSpace(loggedInName)
-        ? "Owner"
-        : loggedInName.Split('@')[0];
+@{
+    ViewData["Title"] = "Dashboard";
+
+    var userRole = Context.Session.GetString("UserRole") ?? "";
+    var userEmail = Context.Session.GetString("UserEmail") ?? "";
+
+    var displayName = userRole switch
+    {
+        "Super Admin" => "Super Admin",
+        "Organization Owner" => "Organization Owner",
+        "School Accountant" => "School Accountant",
+        "Multi-Unit Accountant" => "Multi-Unit Accountant",
+        "Single Unit User" => "Single Unit User",
+        _ => "Finance Officer"
+    };
+
+    var isSuperAdmin = userRole == "Super Admin";
+    var isOwner = userRole == "Organization Owner";
+    var isSchoolAccountant = userRole == "School Accountant";
+    var isMultiUnitAccountant = userRole == "Multi-Unit Accountant";
+    var isSingleUnitUser = userRole == "Single Unit User";
 }
 
-<div class="page-header welcome-header">
-    <div>
-        <span class="welcome-eyebrow">YOUR FINANCIAL WORKSPACE</span>
-        <h1>Welcome back, @displayName! 👋</h1>
-        <p>Here's what's happening across your organization today.</p>
-    </div>
-    <span class="demo-status">LOGIN</span>
-</div>
+<div class="d-flex flex-column gap-4">
 
-<div class="dashboard-toolbar">
-    <div>
-        <label for="reportPeriod">Reporting period</label>
-        <select id="reportPeriod" class="form-select">
-            <option value="month">This month</option>
-            <option value="lastMonth">Last month</option>
-            <option value="year">This year</option>
-            <option value="all">All time</option>
-        </select>
-    </div>
-
-    <div>
-        <label for="unitFilter">Organizational unit</label>
-        <select id="unitFilter" class="form-select">
-            <option value="all">All units</option>
-            <option value="school">School</option>
-            <option value="college">College</option>
-            <option value="bs">BS Program</option>
-            <option value="training">Training Center</option>
-            <option value="academy">Evening Academy</option>
-        </select>
-    </div>
-
-    <div class="dashboard-updated">
-        <span class="status-dot"></span>
-        Illustrative figures
-    </div>
-</div>
-
-<section class="summary-grid">
-    <article class="summary-card">
-        <div class="summary-card-top">
-            <span>Period Revenue</span>
-            <span class="summary-icon revenue-icon">↗</span>
-        </div>
-        <h2 id="revenueValue">Rs. 0</h2>
-        <p>Money received in the selected period</p>
-    </article>
-
-    <article class="summary-card">
-        <div class="summary-card-top">
-            <span>Period Expenses</span>
-            <span class="summary-icon expense-icon">↘</span>
-        </div>
-        <h2 id="expenseValue">Rs. 0</h2>
-        <p>Recorded spending in the selected period</p>
-    </article>
-
-    <article class="summary-card">
-        <div class="summary-card-top">
-            <span>All-Time Net Balance</span>
-            <span class="summary-icon balance-icon">＝</span>
-        </div>
-        <h2 id="balanceValue">Rs. 0</h2>
-        <p>All-time revenue minus expenses</p>
-    </article>
-
-    <article class="summary-card">
-        <div class="summary-card-top">
-            <span>Outstanding Bills</span>
-            <span class="summary-icon bills-icon">▤</span>
-        </div>
-        <h2 id="billsValue">Rs. 0</h2>
-        <p>Remaining unpaid amount, including overdue bills</p>
-    </article>
-</section>
-
-<div class="dashboard-grid">
-    <section class="panel">
-        <div class="panel-header">
-            <div>
-                <h3>Cash Flow</h3>
-                <p id="chartSubtitle">Monthly revenue compared with expenses</p>
-            </div>
-        </div>
-
-        <div class="cashflow-legend">
-            <span><i class="legend-dot revenue-dot"></i> Revenue</span>
-            <span><i class="legend-dot expense-dot"></i> Expenses</span>
-        </div>
-
-        <div class="cashflow-chart" id="cashflowChart"
-             role="img" aria-label="Monthly revenue and expenses chart"></div>
-
-        <p class="chart-footnote">
-            Illustrative figures for demonstration only.
-        </p>
-    </section>
-
-    <section class="panel">
-        <div class="panel-header">
-            <div>
-                <h3>Needs Attention</h3>
-                <p>Items requiring owner review</p>
-            </div>
-        </div>
-
-        <a asp-controller="Notifications" asp-action="Index"
-           class="action-item dashboard-action">
-            <div class="action-icon">⌫</div>
-            <div class="action-details">
-                <strong>Deletion requests</strong>
-                <p><span id="deletionCount">2</span> pending requests to review</p>
-            </div>
-            <span class="action-arrow">→</span>
-        </a>
-
-        <a asp-controller="Bills" asp-action="Index"
-           class="action-item dashboard-action">
-            <div class="action-icon overdue-icon">◷</div>
-            <div class="action-details">
-                <strong>Overdue bills</strong>
-                <p><span id="overdueCount">3</span> bills past their due date</p>
-            </div>
-            <span class="action-arrow">→</span>
-        </a>
-
-        <a asp-controller="Notifications" asp-action="Index"
-           class="panel-link">Open notification center →</a>
-    </section>
-</div>
-
-<section class="panel unit-panel">
-    <div class="panel-header">
+@if (isSuperAdmin)
+{
+    <!-- SUPER ADMIN DASHBOARD -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 pb-2 border-bottom">
         <div>
-            <h3>Unit Performance</h3>
-            <p>Compare financial activity across organizational units</p>
+            <h1 class="h4 mb-1 text-dark fw-bold">Dashboard</h1>
+            <p class="text-muted small mb-0">Overview of registered organizations and users.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/Users/Index?tab=organizations" class="btn btn-primary btn-sm px-3 d-inline-flex align-items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Add Organization</span>
+            </a>
+            <a href="/Users/Index?tab=admins" class="btn btn-outline-secondary btn-sm px-3 d-inline-flex align-items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                <span>Add Admin</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Admin KPI Cards -->
+    <div class="row g-3">
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm h-100 live-kpi-card" style="border-radius:12px;">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between text-muted small mb-2">
+                        <span>Total Organizations</span>
+                        <div class="p-2 rounded icon-badge" style="background:#eff6ff;color:#2563eb;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M9 8h1M9 12h1M9 16h1M14 8h1M14 12h1M14 16h1M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path></svg>
+                        </div>
+                    </div>
+                    <div class="h3 fw-bold mb-1 text-dark" id="adminTotalOrgs">0</div>
+                    <span class="badge bg-light text-secondary border">Active Institutes</span>
+                </div>
+            </div>
         </div>
 
-        <a asp-controller="Units" asp-action="Index"
-           class="panel-link">Manage units →</a>
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm h-100 live-kpi-card" style="border-radius:12px;">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between text-muted small mb-2">
+                        <span>Organization Admins</span>
+                        <div class="p-2 rounded icon-badge" style="background:#f5f3ff;color:#7c3aed;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                        </div>
+                    </div>
+                    <div class="h3 fw-bold mb-1 text-dark" id="adminTotalOwners">0</div>
+                    <span class="badge bg-light text-secondary border">Assigned Admins</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm h-100 live-kpi-card" style="border-radius:12px;">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between text-muted small mb-2">
+                        <span>Registered Users</span>
+                        <div class="p-2 rounded icon-badge" style="background:#ecfdf5;color:#059669;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        </div>
+                    </div>
+                    <div class="h3 fw-bold mb-1 text-dark" id="adminTotalUsers">0</div>
+                    <span class="badge bg-light text-secondary border">Admins &amp; Accountants</span>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="table-responsive">
-        <table class="table align-middle dashboard-table">
-            <thead>
-                <tr>
-                    <th>ORGANIZATIONAL UNIT</th>
-                    <th>REVENUE</th>
-                    <th>EXPENSES</th>
-                    <th>NET BALANCE</th>
-                </tr>
-            </thead>
-            <tbody id="unitPerformanceBody"></tbody>
-            <tfoot>
-                <tr>
-                    <th>Visible total</th>
-                    <th id="totalRevenue">Rs. 0</th>
-                    <th id="totalExpenses">Rs. 0</th>
-                    <th id="totalBalance">Rs. 0</th>
-                </tr>
-            </tfoot>
-        </table>
+    <!-- Organizations Directory Table -->
+    <div class="card border-0 shadow-sm" style="border-radius:12px;">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 class="card-title mb-0 fw-bold text-dark">Organizations</h5>
+            <a href="/Users/Index?tab=organizations" class="btn btn-sm btn-outline-primary">Manage All &rarr;</a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light small text-uppercase text-muted">
+                    <tr>
+                        <th class="ps-3">Organization Name</th>
+                        <th>Created Date</th>
+                        <th>Unit Structure</th>
+                        <th>Assigned Admin</th>
+                        <th>Staff Accounts</th>
+                        <th class="text-end pe-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="adminOrgsTableBody">
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">Loading organization records...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <p class="chart-footnote">
-        The table follows the selected reporting period and unit filter.
-    </p>
-</section>
+}
 
-<style>
-    /* Welcome */
-    .welcome-header {
-        animation: welcomeAppear .65s ease both;
-    }
+else
+{
+    <!-- FINANCIAL DASHBOARD (OWNER / ACCOUNTANT) -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 pb-2 border-bottom">
+        <div>
+            <h1 class="h4 mb-1 text-dark fw-bold">Dashboard</h1>
+            <p class="text-muted small mb-0">Financial summary and cash flow.</p>
+        </div>
 
-    .welcome-eyebrow {
-        display: inline-block;
-        margin-bottom: 8px;
-        color: #4779df;
-        font-size: 10px;
-        font-weight: 800;
-        letter-spacing: 1.8px;
-    }
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div class="d-flex align-items-center gap-1">
+                <label for="unitFilter" class="small text-muted fw-semibold me-1">Unit:</label>
+                <select id="unitFilter" class="form-select form-select-sm" style="min-width:140px;border-radius:8px;">
+                    @{
+                        var homeAllowedUnits = (ViewData["AllowedUnits"] as List<string>) ?? new List<string>();
+                    }
+                    @if (homeAllowedUnits.Count > 1)
+                    {
+                        <option value="all">All Units</option>
+                    }
+                    @foreach (var un in homeAllowedUnits)
+                    {
+                        <option value="@un">@un</option>
+                    }
+                </select>
+            </div>
 
-    .demo-status {
-        display: inline-flex;
-        align-items: center;
-        padding: 6px 10px;
-        border: 1px solid #e8d9ae;
-        border-radius: 20px;
-        background: #fff8e7;
-        color: #896516;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: .5px;
-        white-space: nowrap;
-    }
+            <div class="d-flex align-items-center gap-1">
+                <label for="reportPeriod" class="small text-muted fw-semibold me-1">Period:</label>
+                <select id="reportPeriod" class="form-select form-select-sm" style="min-width:130px;border-radius:8px;">
+                    <option value="month">This Month</option>
+                    <option value="lastMonth">Last Month</option>
+                    <option value="year">This Year</option>
+                    <option value="all">All Time</option>
+                </select>
+            </div>
+        </div>
+    </div>
 
-    .dashboard-updated {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        align-self: end;
-        padding-bottom: 10px;
-        color: #64748b;
-        font-size: 12px;
-    }
+    <!-- Financial KPI Cards -->
+    <div class="row g-3">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between text-muted small mb-2">
+                        <span>Period Revenue</span>
+                        <div class="p-2 rounded" style="background:#ecfdf5;color:#059669;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                        </div>
+                    </div>
+                    <div class="h3 fw-bold mb-1 text-dark" id="revenueValue">Rs. 0</div>
+                    <span class="small text-muted">Income in selected period</span>
+                </div>
+            </div>
+        </div>
 
-    .status-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: #d9a441;
-    }
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between text-muted small mb-2">
+                        <span>Period Expenses</span>
+                        <div class="p-2 rounded" style="background:#fef2f2;color:#dc2626;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                    </div>
+                    <div class="h3 fw-bold mb-1 text-dark" id="expenseValue">Rs. 0</div>
+                    <span class="small text-muted">Operational spending</span>
+                </div>
+            </div>
+        </div>
 
-    /* Summary cards */
-    .summary-card {
-        position: relative;
-        overflow: hidden;
-        cursor: default;
-        transition: transform .28s ease, box-shadow .28s ease,
-                    border-color .28s ease;
-        animation: cardAppear .55s ease both;
-    }
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between text-muted small mb-2">
+                        <span>Net Balance</span>
+                        <div class="p-2 rounded" style="background:#eff6ff;color:#2563eb;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                        </div>
+                    </div>
+                    <div class="h3 fw-bold mb-1 text-dark" id="balanceValue">Rs. 0</div>
+                    <span class="small text-muted">Total liquid reserves</span>
+                </div>
+            </div>
+        </div>
 
-    .summary-card:nth-child(2) {
-        animation-delay: .08s;
-    }
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between text-muted small mb-2">
+                        <span>Outstanding Bills</span>
+                        <div class="p-2 rounded" style="background:#fffbeb;color:#d97706;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                        </div>
+                    </div>
+                    <div class="h3 fw-bold mb-1 text-dark" id="billsValue">Rs. 0</div>
+                    <span class="small text-muted">Unpaid vendor commitments</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    .summary-card:nth-child(3) {
-        animation-delay: .16s;
-    }
+    <!-- Chart & Actions Section -->
+    <div class="row g-3">
+        <!-- Cash Flow Chart -->
+        <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap">
+                    <div>
+                        <h6 class="card-title mb-0 fw-bold text-dark">Cash Flow History</h6>
+                        <small class="text-muted" id="chartSubtitle">Monthly revenue compared with expenses</small>
+                    </div>
+                    <div class="d-flex gap-3 small text-muted">
+                        <span class="d-inline-flex align-items-center gap-1">
+                            <span style="width:10px;height:10px;background:#356ae6;border-radius:2px;display:inline-block;"></span> Revenue
+                        </span>
+                        <span class="d-inline-flex align-items-center gap-1">
+                            <span style="width:10px;height:10px;background:#f59e0b;border-radius:2px;display:inline-block;"></span> Expenses
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="cashflow-chart" id="cashflowChart" style="min-height:220px;" role="img" aria-label="Monthly trend chart"></div>
+                </div>
+            </div>
+        </div>
 
-    .summary-card:nth-child(4) {
-        animation-delay: .24s;
-    }
+        <!-- Needs Attention / Action Notifications -->
+        <div class="col-12 col-lg-4">
+            <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="card-title mb-0 fw-bold text-dark">Action Required</h6>
+                    <small class="text-muted">Items requiring administrative or operational review</small>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush" id="attentionList">
+                        <a asp-controller="Notifications" asp-action="Index" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 border-0 border-bottom">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="p-2 rounded bg-warning-subtle text-warning">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                                </div>
+                                <div>
+                                    <div class="fw-semibold text-dark small">Pending Approvals</div>
+                                    <small class="text-muted"><span id="deletionCount">0</span> reversal / deletion requests</small>
+                                </div>
+                            </div>
+                            <span class="badge bg-light text-secondary border">&rarr;</span>
+                        </a>
 
-    .summary-card:hover {
-        transform: translateY(-7px) rotate(-.5deg);
-        box-shadow: 0 14px 30px rgba(36, 63, 110, .13);
-        border-color: #b9cdf8;
-    }
+                        <a asp-controller="Bills" asp-action="Index" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 border-0 border-bottom">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="p-2 rounded bg-danger-subtle text-danger">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                </div>
+                                <div>
+                                    <div class="fw-semibold text-dark small">Overdue Invoices</div>
+                                    <small class="text-muted"><span id="overdueCount">0</span> bills past due date</small>
+                                </div>
+                            </div>
+                            <span class="badge bg-light text-secondary border">&rarr;</span>
+                        </a>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-0 p-3 text-center">
+                    <a asp-controller="Notifications" asp-action="Index" class="small fw-semibold text-primary text-decoration-none">
+                        View all notifications &rarr;
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    .summary-card-top {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-    }
+    <!-- Unit Performance Comparison Table -->
+    <div class="card border-0 shadow-sm" style="border-radius:12px;">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="card-title mb-0 fw-bold text-dark">Unit Performance Summary</h6>
+                <small class="text-muted">Breakdown across authorized organizational units for the period</small>
+            </div>
+            @if (isOwner)
+            {
+                <a asp-controller="Units" asp-action="Index" class="btn btn-sm btn-outline-primary">Manage Units &rarr;</a>
+            }
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light small text-uppercase text-muted">
+                    <tr>
+                        <th class="ps-3">Unit</th>
+                        <th>Period Revenue</th>
+                        <th>Period Expenses</th>
+                        <th>Net Balance</th>
+                        <th class="text-end pe-3">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="unitPerformanceBody">
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">Loading unit data...</td>
+                    </tr>
+                </tbody>
+                <tfoot class="table-light fw-bold">
+                    <tr>
+                        <td class="ps-3">Total Visible</td>
+                        <td id="totalRevenue">Rs. 0</td>
+                        <td id="totalExpenses">Rs. 0</td>
+                        <td id="totalBalance">Rs. 0</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
 
-    .summary-icon {
-        display: inline-flex;
-        width: 36px;
-        height: 36px;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        border-radius: 10px;
-        font-size: 20px;
-        transition: transform .3s ease;
-    }
+    <!-- Recent Transactions Table -->
+    <div class="card border-0 shadow-sm" style="border-radius:12px;">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h6 class="card-title mb-0 fw-bold text-dark">Recent Transactions</h6>
+            <a asp-controller="Transactions" asp-action="Revenue" class="btn btn-sm btn-outline-primary">View Ledger &rarr;</a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light small text-uppercase text-muted">
+                    <tr>
+                        <th class="ps-3">Date</th>
+                        <th>Unit</th>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th>Account</th>
+                        <th class="text-end pe-3">Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="recentTransactionsBody">
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">Loading recent entries...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
 
-    .summary-card:hover .summary-icon {
-        transform: scale(1.13) rotate(-8deg);
-    }
-
-    .revenue-icon {
-        background: #e6f7ef;
-        color: #17865b;
-    }
-
-    .expense-icon {
-        background: #fff0ed;
-        color: #d35d49;
-    }
-
-    .balance-icon {
-        background: #eaf1ff;
-        color: #3568c8;
-    }
-
-    .bills-icon {
-        background: #fff5df;
-        color: #ad7818;
-    }
-
-    /* Panels */
-    .panel {
-        transition: box-shadow .25s ease, transform .25s ease;
-    }
-
-    .panel:hover {
-        box-shadow: 0 9px 25px rgba(36, 63, 110, .07);
-    }
-
-    /* Cash-flow chart */
-    .cashflow-legend {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 18px;
-        margin: 8px 0 18px;
-        color: #64748b;
-        font-size: 12px;
-    }
-
-    .cashflow-legend span {
-        display: flex;
-        align-items: center;
-        gap: 7px;
-    }
-
-    .legend-dot {
-        display: inline-block;
-        width: 9px;
-        height: 9px;
-        border-radius: 3px;
-    }
-
-    .revenue-dot {
-        background: #4779df;
-    }
-
-    .expense-dot {
-        background: #e8a36c;
-    }
-
-    .cashflow-chart {
-        display: grid;
-        grid-template-columns: repeat(6, minmax(0, 1fr));
-        gap: 12px;
-        min-height: 210px;
-        align-items: end;
-        padding: 16px 4px 0;
-        border-bottom: 1px solid #e7ebf2;
-        background: repeating-linear-gradient(
-            to top,
-            transparent 0,
-            transparent 49px,
-            #edf0f5 50px
-        );
-    }
-
-    .chart-month {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: end;
-        min-width: 0;
-        height: 100%;
-    }
-
-    .chart-bars {
-        display: flex;
-        align-items: end;
-        justify-content: center;
-        gap: 5px;
-        width: 100%;
-        height: 165px;
-    }
-
-    .chart-bar {
-        width: min(30%, 22px);
-        min-height: 3px;
-        border-radius: 5px 5px 0 0;
-        transition: height .3s ease, filter .2s ease;
-    }
-
-    .chart-bar:hover {
-        filter: brightness(.88);
-    }
-
-    .revenue-bar {
-        background: #4779df;
-    }
-
-    .expense-bar {
-        background: #e8a36c;
-    }
-
-    .chart-month-label {
-        padding: 9px 0;
-        color: #64748b;
-        font-size: 11px;
-    }
-
-    .chart-footnote {
-        margin: 12px 0 0;
-        color: #94a3b8;
-        font-size: 11px;
-    }
-
-    /* Action links */
-    .dashboard-action {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 15px 0;
-        color: inherit;
-        text-decoration: none;
-        border-bottom: 1px solid #edf0f5;
-        transition: background-color .22s ease, padding-left .22s ease;
-    }
-
-    .dashboard-action:last-of-type {
-        border-bottom: none;
-    }
-
-    .dashboard-action:hover {
-        padding-left: 10px;
-        background-color: #f6f9ff;
-    }
-
-    .dashboard-action:hover .action-details strong {
-        color: #3568c8;
-    }
-
-    .action-arrow {
-        margin-left: auto;
-        color: #94a3b8;
-        transition: transform .22s ease;
-    }
-
-    .dashboard-action:hover .action-arrow {
-        transform: translateX(5px);
-    }
-
-    .overdue-icon {
-        color: #c15b42;
-    }
-
-    /* Unit table */
-    .dashboard-table th {
-        color: #64748b;
-        font-size: 11px;
-        font-weight: 700;
-        white-space: nowrap;
-    }
-
-    .dashboard-table td {
-        font-size: 13px;
-    }
-
-    .dashboard-table tbody tr {
-        transition: background-color .2s ease;
-    }
-
-    .dashboard-table tbody tr:hover {
-        background-color: #f3f7ff;
-    }
-
-    .dashboard-table tfoot {
-        background: #f8fafc;
-        font-weight: 700;
-    }
-
-    .dashboard-table tfoot th {
-        color: #334155;
-        font-size: 12px;
-    }
-
-    .positive-balance {
-        color: #16835c;
-        font-weight: 600;
-    }
-
-    .negative-balance {
-        color: #c2413b;
-        font-weight: 600;
-    }
-
-    /* Entrance animations */
-    @@keyframes welcomeAppear {
-        from {
-            opacity: 0;
-            transform: translateY(12px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    @@keyframes cardAppear {
-        from {
-            opacity: 0;
-            transform: translateY(14px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    @@media (max-width: 850px) {
-        .dashboard-toolbar {
-            flex-wrap: wrap;
-        }
-
-        .dashboard-updated {
-            align-self: center;
-            padding-bottom: 0;
-        }
-    }
-
-    @@media (max-width: 520px) {
-        .cashflow-chart {
-            gap: 4px;
-        }
-
-        .chart-bars {
-            gap: 3px;
-        }
-
-        .chart-month-label {
-            font-size: 10px;
-        }
-
-        .demo-status {
-            font-size: 9px;
-        }
-    }
-
-    @@media (prefers-reduced-motion: reduce) {
-        .welcome-header,
-        .summary-card {
-            animation: none;
-        }
-
-        .summary-card,
-        .panel,
-        .dashboard-action,
-        .action-arrow,
-        .summary-card .summary-icon,
-        .chart-bar {
-            transition: none;
-        }
-    }
-</style>
+</div>
 
 @section Scripts {
 <script>
 (() => {
-    // Frontend-only illustrative data. No database connection yet.
-    const units = [
-        { id: "school", name: "School", revenue: 680000, expenses: 415000, bills: 62000 },
-        { id: "college", name: "College", revenue: 520000, expenses: 340000, bills: 48000 },
-        { id: "bs", name: "BS Program", revenue: 760000, expenses: 495000, bills: 85000 },
-        { id: "training", name: "Training Center", revenue: 285000, expenses: 172000, bills: 26000 },
-        { id: "academy", name: "Evening Academy", revenue: 195000, expenses: 118000, bills: 19000 }
-    ];
-
-    const periodMultipliers = {
-        month: 1,
-        lastMonth: 0.88,
-        year: 8.2,
-        all: 15.6
-    };
-
-    const monthlyFlow = [
-        { month: "May", revenue: 0.76, expenses: 0.57 },
-        { month: "Jun", revenue: 0.83, expenses: 0.61 },
-        { month: "Jul", revenue: 0.71, expenses: 0.53 },
-        { month: "Aug", revenue: 0.91, expenses: 0.66 },
-        { month: "Sep", revenue: 0.87, expenses: 0.63 },
-        { month: "Oct", revenue: 1.00, expenses: 0.72 }
-    ];
+    const isSuperAdmin = @(isSuperAdmin ? "true" : "false");
 
     const money = value =>
-        "Rs. " + Math.round(value).toLocaleString("en-PK");
+        "Rs. " + Math.round(value || 0).toLocaleString("en-PK");
 
-    const periodSelect = document.getElementById("reportPeriod");
-    const unitSelect = document.getElementById("unitFilter");
+    if (isSuperAdmin) {
+        // Load Super Admin Dashboard
+        async function loadAdminDashboard() {
+            try {
+                const response = await fetch("/api/dashboard/data");
+                if (!response.ok) throw new Error("Failed to load admin metrics");
+                const data = await response.json();
 
-    function renderChart() {
-        const chart = document.getElementById("cashflowChart");
+                document.getElementById("adminTotalOrgs").textContent = data.totalOrganizations || 0;
+                document.getElementById("adminTotalOwners").textContent = data.totalOwners || 0;
+                document.getElementById("adminTotalUsers").textContent = data.totalUsers || 0;
 
-        const data = periodSelect.value === "lastMonth"
-            ? monthlyFlow.map(item => ({
-                ...item,
-                revenue: item.revenue * 0.88,
-                expenses: item.expenses * 0.88
-            }))
-            : monthlyFlow;
+                const tbody = document.getElementById("adminOrgsTableBody");
+                if (tbody && data.organizations) {
+                    if (data.organizations.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No organizations registered yet.</td></tr>';
+                        return;
+                    }
 
-        const maxValue = Math.max(
-            ...data.flatMap(item => [item.revenue, item.expenses])
-        );
+                    tbody.innerHTML = data.organizations.map(org => {
+                        const unitsHtml = (org.units && org.units.length > 0)
+                            ? org.units.map(u => `<span class="badge bg-light text-dark border me-1">${u}</span>`).join("")
+                            : '<span class="text-muted small">None assigned</span>';
 
-        chart.innerHTML = data.map(item => {
-            const revenueHeight = Math.max(4, item.revenue / maxValue * 150);
-            const expenseHeight = Math.max(4, item.expenses / maxValue * 150);
+                        return `
+                            <tr>
+                                <td class="ps-3">
+                                    <div class="fw-bold text-dark">${org.name}</div>
+                                    <small class="text-muted">ID: ${org.id}</small>
+                                </td>
+                                <td><span class="small text-muted">${org.createdAt}</span></td>
+                                <td>${unitsHtml}</td>
+                                <td>
+                                    <div class="fw-semibold text-dark small">${org.ownerName}</div>
+                                    <small class="text-muted">${org.ownerEmail}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-secondary">${org.userCount} Accounts</span>
+                                </td>
+                                <td class="text-end pe-3">
+                                    <a href="/Users/Index?tab=organizations&id=${org.id}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:12px;">Edit</a>
+                                    <a href="/Users/Index?tab=admins&instituteId=${org.id}" class="btn btn-sm btn-outline-primary py-0 px-2 ms-1" style="font-size:12px;">Manage Admin</a>
+                                </td>
+                            </tr>
+                        `;
+                    }).join("");
+                }
+            } catch (err) {
+                console.error("Admin dashboard load failed:", err);
+            }
+        }
 
-            return `
-                <div class="chart-month">
-                    <div class="chart-bars">
-                        <div class="chart-bar revenue-bar"
-                             style="height:${revenueHeight}px"
-                             title="Revenue: ${money(item.revenue * 1000000)}"></div>
-                        <div class="chart-bar expense-bar"
-                             style="height:${expenseHeight}px"
-                             title="Expenses: ${money(item.expenses * 1000000)}"></div>
-                    </div>
-                    <span class="chart-month-label">${item.month}</span>
-                </div>`;
-        }).join("");
+        loadAdminDashboard();
+    } else {
+        // Load Financial Dashboard (Owner / Accountant)
+        const periodSelect = document.getElementById("reportPeriod");
+        const unitSelect = document.getElementById("unitFilter");
+
+        function renderChart(monthlyFlow) {
+            const chart = document.getElementById("cashflowChart");
+            if (!chart) return;
+
+            if (!monthlyFlow || monthlyFlow.length === 0) {
+                chart.innerHTML = '<div class="d-flex align-items-center justify-content-center h-100 text-muted small">No monthly transactions recorded for the selected filter.</div>';
+                return;
+            }
+
+            const maxValue = Math.max(
+                1,
+                ...monthlyFlow.flatMap(item => [item.revenue, item.expenses])
+            );
+
+            chart.innerHTML = `
+                <div style="display:grid;grid-template-columns:repeat(${monthlyFlow.length}, 1fr);gap:16px;height:180px;align-items:end;padding-bottom:20px;border-bottom:1px solid #e2e8f0;">
+                    ${monthlyFlow.map(item => {
+                        const revH = Math.max(4, Math.round((item.revenue / maxValue) * 150));
+                        const expH = Math.max(4, Math.round((item.expenses / maxValue) * 150));
+                        return `
+                            <div class="d-flex flex-column align-items-center justify-content-end h-100">
+                                <div class="d-flex align-items-end justify-content-center gap-1 w-100" style="height:150px;">
+                                    <div style="width:16px;height:${revH}px;background:#356ae6;border-radius:4px 4px 0 0;" title="Revenue: ${money(item.revenue)}"></div>
+                                    <div style="width:16px;height:${expH}px;background:#f59e0b;border-radius:4px 4px 0 0;" title="Expenses: ${money(item.expenses)}"></div>
+                                </div>
+                                <span class="small text-muted mt-2" style="font-size:11px;">${item.month}</span>
+                            </div>
+                        `;
+                    }).join("")}
+                </div>
+            `;
+        }
+
+        async function loadFinancialDashboard() {
+            const period = periodSelect ? periodSelect.value : "month";
+            const selectedUnit = unitSelect ? unitSelect.value : "all";
+
+            try {
+                const response = await fetch(`/api/dashboard/data?period=${encodeURIComponent(period)}&unit=${encodeURIComponent(selectedUnit)}`);
+                if (!response.ok) throw new Error("Network error");
+                const data = await response.json();
+
+                document.getElementById("revenueValue").textContent = money(data.periodRevenue);
+                document.getElementById("expenseValue").textContent = money(data.periodExpenses);
+                document.getElementById("balanceValue").textContent = money(data.allTimeNet);
+                document.getElementById("billsValue").textContent = money(data.outstandingBills);
+
+                const overdueElem = document.getElementById("overdueCount");
+                if (overdueElem) overdueElem.textContent = data.overdueCount ?? 0;
+
+                const deletionElem = document.getElementById("deletionCount");
+                if (deletionElem) deletionElem.textContent = data.deletionCount ?? 0;
+
+                // Unit performance breakdown
+                const tbody = document.getElementById("unitPerformanceBody");
+                if (tbody && data.unitPerformance) {
+                    if (data.unitPerformance.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-muted">No unit metrics visible.</td></tr>';
+                    } else {
+                        tbody.innerHTML = data.unitPerformance.map(unit => {
+                            const isPositive = unit.netBalance >= 0;
+                            const balanceColor = isPositive ? "text-success" : "text-danger";
+                            return `
+                                <tr>
+                                    <td class="ps-3 fw-semibold text-dark">${unit.name}</td>
+                                    <td>${money(unit.revenue)}</td>
+                                    <td>${money(unit.expenses)}</td>
+                                    <td class="${balanceColor} fw-semibold">${money(unit.netBalance)}</td>
+                                    <td class="text-end pe-3">
+                                        <a href="/Units/Dashboard?name=${encodeURIComponent(unit.name)}" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:11px;">View Unit</a>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join("");
+                    }
+                }
+
+                const totalRevElem = document.getElementById("totalRevenue");
+                if (totalRevElem) totalRevElem.textContent = money(data.periodRevenue);
+
+                const totalExpElem = document.getElementById("totalExpenses");
+                if (totalExpElem) totalExpElem.textContent = money(data.periodExpenses);
+
+                const totalBalElem = document.getElementById("totalBalance");
+                if (totalBalElem) {
+                    const net = data.periodRevenue - data.periodExpenses;
+                    totalBalElem.textContent = money(net);
+                    totalBalElem.className = net >= 0 ? "text-success fw-bold" : "text-danger fw-bold";
+                }
+
+                // Recent transactions
+                const txBody = document.getElementById("recentTransactionsBody");
+                if (txBody && data.recentTransactions) {
+                    if (data.recentTransactions.length === 0) {
+                        txBody.innerHTML = '<tr><td colspan="6" class="text-center py-3 text-muted">No transactions found for the selected period.</td></tr>';
+                    } else {
+                        txBody.innerHTML = data.recentTransactions.map(tx => {
+                            const isRev = tx.type === "Revenue";
+                            const amountColor = isRev ? "text-success" : "text-danger";
+                            const sign = isRev ? "+" : "-";
+                            return `
+                                <tr>
+                                    <td class="ps-3 small text-muted">${tx.date}</td>
+                                    <td><span class="badge bg-light text-dark border">${tx.unit}</span></td>
+                                    <td class="small fw-semibold text-dark">${tx.description}</td>
+                                    <td class="small text-muted">${tx.category || "General"}</td>
+                                    <td class="small text-muted">${tx.account || "Default"}</td>
+                                    <td class="text-end pe-3 fw-bold ${amountColor}">${sign} ${money(tx.amount)}</td>
+                                </tr>
+                            `;
+                        }).join("");
+                    }
+                }
+
+                renderChart(data.monthlyFlow);
+            } catch (err) {
+                console.error("Dashboard data load error:", err);
+            }
+        }
+
+        if (periodSelect) periodSelect.addEventListener("change", loadFinancialDashboard);
+        if (unitSelect) unitSelect.addEventListener("change", loadFinancialDashboard);
+
+        loadFinancialDashboard();
     }
 
-    function renderDashboard() {
-        const period = periodSelect.value;
-        const selectedUnit = unitSelect.value;
-        const multiplier = periodMultipliers[period];
+    // Live movable 3D tilt tracking & smooth zoom in/out for cards
+    function initLiveMovableCards() {
+        const cards = document.querySelectorAll('.live-kpi-card');
+        cards.forEach(card => {
+            let isHovered = false;
 
-        const visibleUnits = selectedUnit === "all"
-            ? units
-            : units.filter(unit => unit.id === selectedUnit);
+            card.addEventListener('mouseenter', () => {
+                isHovered = true;
+                card.style.transition = 'transform 0.1s ease-out, box-shadow 0.28s ease, border-color 0.25s ease';
+            });
 
-        const revenue = visibleUnits.reduce(
-            (sum, unit) => sum + unit.revenue, 0
-        );
+            card.addEventListener('mousemove', (e) => {
+                if (!isHovered) return;
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
 
-        const expenses = visibleUnits.reduce(
-            (sum, unit) => sum + unit.expenses, 0
-        );
+                // Normalized offset from center (-1 to 1)
+                const xPct = (x / rect.width - 0.5) * 2;
+                const yPct = (y / rect.height - 0.5) * 2;
 
-        const outstanding = visibleUnits.reduce(
-            (sum, unit) => sum + unit.bills, 0
-        );
+                // Live dynamic movement: subtle 3D tilt, slight translation, and 1.03 zoom
+                const rotateX = (-yPct * 7).toFixed(2);
+                const rotateY = (xPct * 7).toFixed(2);
+                const moveX = (xPct * 5).toFixed(1);
+                const moveY = (yPct * 4 - 6).toFixed(1);
 
-        document.getElementById("revenueValue").textContent =
-            money(revenue * multiplier);
+                card.style.transform = `perspective(800px) translate3d(${moveX}px, ${moveY}px, 0) scale(1.03) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+            });
 
-        document.getElementById("expenseValue").textContent =
-            money(expenses * multiplier);
-
-        // All-time net balance does not change with reporting period.
-        document.getElementById("balanceValue").textContent =
-            money((revenue - expenses) * periodMultipliers.all);
-
-        // Outstanding bills are a current remaining amount, not a period total.
-        document.getElementById("billsValue").textContent =
-            money(outstanding);
-
-        document.getElementById("chartSubtitle").textContent =
-            period === "all"
-                ? "Illustrative monthly revenue and expenses"
-                : period === "year"
-                    ? "Monthly trend for the selected year"
-                    : period === "lastMonth"
-                        ? "Illustrative previous-period comparison"
-                        : "Illustrative current-period comparison";
-
-        document.getElementById("unitPerformanceBody").innerHTML =
-            visibleUnits.map(unit => {
-                const unitRevenue = unit.revenue * multiplier;
-                const unitExpenses = unit.expenses * multiplier;
-                const balance = unitRevenue - unitExpenses;
-
-                const balanceClass = balance >= 0
-                    ? "positive-balance"
-                    : "negative-balance";
-
-                return `
-                    <tr>
-                        <td><strong>${unit.name}</strong></td>
-                        <td>${money(unitRevenue)}</td>
-                        <td>${money(unitExpenses)}</td>
-                        <td class="${balanceClass}">${money(balance)}</td>
-                    </tr>`;
-            }).join("");
-
-        document.getElementById("totalRevenue").textContent =
-            money(revenue * multiplier);
-
-        document.getElementById("totalExpenses").textContent =
-            money(expenses * multiplier);
-
-        document.getElementById("totalBalance").textContent =
-            money((revenue - expenses) * multiplier);
-
-        renderChart();
+            card.addEventListener('mouseleave', () => {
+                isHovered = false;
+                // Smooth springy zoom out transition back to resting state
+                card.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.4, 0.64, 1), box-shadow 0.28s ease, border-color 0.25s ease';
+                card.style.transform = 'perspective(800px) translate3d(0, 0, 0) scale(1) rotateX(0deg) rotateY(0deg)';
+            });
+        });
     }
 
-    periodSelect.addEventListener("change", renderDashboard);
-    unitSelect.addEventListener("change", renderDashboard);
-
-    renderDashboard();
+    initLiveMovableCards();
 })();
 </script>
 }

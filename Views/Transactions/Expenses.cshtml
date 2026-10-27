@@ -1,12 +1,26 @@
 
 @{
     ViewData["Title"] = "Expenses";
+    var userRole = Context.Session.GetString("UserRole") ?? "Accountant";
+    var allowedUnits = (ViewData["AllowedUnits"] as List<string>) ?? new List<string>();
 }
 
-<div class="page-header">
+<ul class="nav nav-pills mb-3 gap-2">
+    <li class="nav-item">
+        <a class="nav-link fw-semibold px-3 py-2 text-secondary" asp-controller="Transactions" asp-action="Revenue" style="border-radius:8px;font-size:13px;">Revenue Ledger</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link active fw-semibold px-3 py-2" asp-controller="Transactions" asp-action="Expenses" style="border-radius:8px;font-size:13px;">Expense Ledger</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link fw-semibold px-3 py-2 text-secondary" asp-controller="Bills" asp-action="Index" style="border-radius:8px;font-size:13px;">Bills &amp; Payables</a>
+    </li>
+</ul>
+
+<div class="page-header mt-2">
     <div>
         <h1>Expenses</h1>
-        <p>Record and review spending across your organization.</p>
+        <p>Record and review spending across your units.</p>
     </div>
 
     <button type="button" class="btn btn-primary"
@@ -19,7 +33,9 @@
     <article class="summary-card">
         <div class="summary-card-top">
             <span>Total Expenses</span>
-            <span class="summary-icon">↘</span>
+            <span class="summary-icon" style="background:#fef2f2;color:#dc2626;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </span>
         </div>
         <h2 id="totalExpenses">Rs. 0</h2>
         <p>Total recorded spending</p>
@@ -28,16 +44,20 @@
     <article class="summary-card">
         <div class="summary-card-top">
             <span>Expense Entries</span>
-            <span class="summary-icon">▤</span>
+            <span class="summary-icon" style="background:#eff6ff;color:#2563eb;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+            </span>
         </div>
         <h2 id="expenseCount">0</h2>
-        <p>Number of recorded entries</p>
+        <p>Total transaction records</p>
     </article>
 
     <article class="summary-card">
         <div class="summary-card-top">
             <span>Average Expense</span>
-            <span class="summary-icon">＝</span>
+            <span class="summary-icon" style="background:#fffbeb;color:#d97706;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            </span>
         </div>
         <h2 id="averageExpense">Rs. 0</h2>
         <p>Average amount per entry</p>
@@ -45,12 +65,6 @@
 </section>
 
 <section class="panel">
-    <div class="panel-header">
-        <div>
-            <h3>Expense Entries</h3>
-            <p>Search and review spending by unit or payment account.</p>
-        </div>
-    </div>
 
     <div class="transaction-toolbar">
         <input id="expenseSearch"
@@ -59,12 +73,18 @@
                placeholder="Search description or account..." />
 
         <select id="expenseUnitFilter" class="form-select">
-            <option value="all">All units</option>
-            <option value="School">School</option>
-            <option value="College">College</option>
-            <option value="BS Program">BS Program</option>
-            <option value="Training Center">Training Center</option>
-            <option value="Evening Academy">Evening Academy</option>
+            @if (allowedUnits.Count > 1)
+            {
+                <option value="all">All units</option>
+            }
+            @foreach (var u in allowedUnits)
+            {
+                <option value="@u">@u</option>
+            }
+        </select>
+
+        <select id="expenseCategoryFilter" class="form-select">
+            <option value="all">All categories</option>
         </select>
 
         <select id="expenseAccountFilter" class="form-select">
@@ -81,13 +101,15 @@
                     <th>Date</th>
                     <th>Description</th>
                     <th>Unit</th>
+                    <th>Category</th>
                     <th>Account</th>
                     <th class="text-end">Amount</th>
+                    <th class="text-center">Action</th>
                 </tr>
             </thead>
             <tbody id="expenseRows">
                 <tr>
-                    <td colspan="5" class="text-center py-5">
+                    <td colspan="7" class="text-center py-5">
                         <strong>No expense entries yet</strong>
                         <p class="mb-0 mt-2">
                             Add your first expense to get started.
@@ -97,15 +119,11 @@
             </tbody>
         </table>
     </div>
-
-    <p class="preview-note">
-        Preview mode: entries are temporary and will be lost when
-        the page refreshes. Database saving will be implemented later.
-    </p>
 </section>
 
 <div id="expenseModal" class="transaction-modal" hidden>
     <form id="expenseForm" class="transaction-form">
+        @Html.AntiForgeryToken()
         <div class="form-heading">
             <div>
                 <h2>Add Expense</h2>
@@ -122,6 +140,7 @@
 
         <label for="expenseDescription">Description</label>
         <input id="expenseDescription"
+               name="description"
                class="form-control"
                required
                maxlength="120"
@@ -129,12 +148,14 @@
 
         <label for="expenseDate">Expense date</label>
         <input id="expenseDate"
+               name="date"
                class="form-control"
                type="date"
                required />
 
         <label for="expenseAmount">Amount (PKR)</label>
         <input id="expenseAmount"
+               name="amount"
                class="form-control"
                type="number"
                min="0.01"
@@ -143,16 +164,20 @@
                placeholder="Enter amount" />
 
         <label for="expenseUnit">Organizational unit</label>
-        <select id="expenseUnit" class="form-select" required>
-            <option value="School">School</option>
-            <option value="College">College</option>
-            <option value="BS Program">BS Program</option>
-            <option value="Training Center">Training Center</option>
-            <option value="Evening Academy">Evening Academy</option>
+        <select id="expenseUnit" name="unit" class="form-select" required>
+            @foreach (var u in allowedUnits)
+            {
+                <option value="@u">@u</option>
+            }
+        </select>
+
+        <label for="expenseCategory">Expense category</label>
+        <select id="expenseCategory" name="category" class="form-select" required>
+            <option value="" disabled selected>Select category</option>
         </select>
 
         <label for="expenseAccount">Payment account</label>
-        <select id="expenseAccount" class="form-select" required>
+        <select id="expenseAccount" name="account" class="form-select" required>
             <option value="Cash">Cash</option>
             <option value="Bank Account">Bank Account</option>
         </select>
@@ -164,31 +189,59 @@
                 Cancel
             </button>
 
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="btn btn-primary" id="saveExpenseBtn">
                 Save Expense
             </button>
         </div>
     </form>
 </div>
 
+<div id="requestDeletionModal" class="transaction-modal" hidden>
+    <form id="requestDeletionForm" class="transaction-form">
+        @Html.AntiForgeryToken()
+        <input type="hidden" id="reqTxId" name="transactionId" />
+        <div class="form-heading">
+            <div>
+                <h2>Request Deletion</h2>
+                <p>Submit a deletion request for administrator approval.</p>
+            </div>
+            <button type="button" class="close-button" aria-label="Close form" onclick="closeRequestDeletionModal()">×</button>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label text-muted">Transaction Details</label>
+            <div id="reqTxDesc" class="fw-bold fs-6"></div>
+        </div>
+
+        <label for="reqTxReason">Reason for deletion request</label>
+        <textarea id="reqTxReason" name="reason" class="form-control" rows="3" required
+                  placeholder="Explain why this expense should be deleted..."></textarea>
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-outline-secondary" onclick="closeRequestDeletionModal()">Cancel</button>
+            <button type="submit" class="btn btn-warning" id="submitReqBtn">Submit Request</button>
+        </div>
+    </form>
+</div>
+
 @section Scripts {
     <script>
-        const expenseEntries = [];
+        let expenseEntries = [];
+        const currentUserRole = '@userRole';
+        const canDirectlyDelete = currentUserRole === "Super Admin" || currentUserRole === "Organization Owner";
 
         const expenseMoneyFormat = new Intl.NumberFormat("en-PK", {
             maximumFractionDigits: 2
         });
 
         function formatExpenseMoney(amount) {
-            return "Rs. " + expenseMoneyFormat.format(amount);
+            return "Rs. " + expenseMoneyFormat.format(amount || 0);
         }
 
         function openExpenseForm() {
             document.getElementById("expenseModal").hidden = false;
-
             document.getElementById("expenseDate").value =
                 new Date().toLocaleDateString("en-CA");
-
             document.getElementById("expenseDescription").focus();
         }
 
@@ -196,8 +249,20 @@
             document.getElementById("expenseModal").hidden = true;
         }
 
+        function openRequestDeletionModal(id, desc) {
+            document.getElementById("reqTxId").value = id;
+            document.getElementById("reqTxDesc").textContent = desc;
+            document.getElementById("reqTxReason").value = "";
+            document.getElementById("requestDeletionModal").hidden = false;
+            document.getElementById("reqTxReason").focus();
+        }
+
+        function closeRequestDeletionModal() {
+            document.getElementById("requestDeletionModal").hidden = true;
+        }
+
         function escapeExpenseHtml(value) {
-            return String(value).replace(/[&<>"']/g, character => ({
+            return String(value ?? "").replace(/[&<>"']/g, character => ({
                 "&": "&amp;",
                 "<": "&lt;",
                 ">": "&gt;",
@@ -206,33 +271,153 @@
             })[character]);
         }
 
+        async function loadPaymentAccounts() {
+            try {
+                const response = await fetch("/api/bankaccounts");
+                if (response.ok) {
+                    const data = await response.json();
+                    const accounts = data.items || [];
+                    const modalSelect = document.getElementById("expenseAccount");
+                    const filterSelect = document.getElementById("expenseAccountFilter");
+                    
+                    if (modalSelect) {
+                        modalSelect.innerHTML = `<option value="Cash">Cash</option>` +
+                            accounts.map(a => `<option value="${escapeExpenseHtml(a.accountName)}">${escapeExpenseHtml(a.accountName)} (${escapeExpenseHtml(a.bankName)})</option>`).join("");
+                    }
+                    if (filterSelect) {
+                        const currentVal = filterSelect.value;
+                        filterSelect.innerHTML = `<option value="all">All accounts</option><option value="Cash">Cash</option>` +
+                            accounts.map(a => `<option value="${escapeExpenseHtml(a.accountName)}">${escapeExpenseHtml(a.accountName)}</option>`).join("");
+                        filterSelect.value = currentVal;
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load bank accounts:", err);
+            }
+        }
+
+        async function fetchExpensesFromDb() {
+            try {
+                const response = await fetch("/api/transactions/expenses");
+                if (!response.ok) throw new Error("Failed to load expenses");
+                const data = await response.json();
+                expenseEntries = data.items || [];
+                renderExpenses();
+            } catch (err) {
+                console.error("Error loading expenses:", err);
+            }
+        }
+
+        async function deleteTransaction(id) {
+            if (!confirm(`Are you sure you want to permanently delete Transaction #${id}? This will update account balances and generate an audit log.`)) {
+                return;
+            }
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
+            const formData = new FormData();
+            formData.append("__RequestVerificationToken", token);
+
+            try {
+                const response = await fetch(`/api/transactions/delete/${id}`, {
+                    method: "POST",
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.success) {
+                    await fetchExpensesFromDb();
+                } else {
+                    alert(result.message || "Failed to delete transaction.");
+                }
+            } catch (err) {
+                alert("Network error while deleting transaction.");
+            }
+        }
+
+        document.getElementById("requestDeletionForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+            const btn = document.getElementById("submitReqBtn");
+            btn.disabled = true;
+            btn.textContent = "Submitting...";
+
+            const formData = new FormData(this);
+            try {
+                const response = await fetch("/api/transactions/request-deletion", {
+                    method: "POST",
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert(result.message);
+                    closeRequestDeletionModal();
+                } else {
+                    alert(result.message || "Failed to submit deletion request.");
+                }
+            } catch (err) {
+                alert("Network error while submitting deletion request.");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Submit Request";
+            }
+        });
+
         document.getElementById("expenseForm")
-            .addEventListener("submit", function (event) {
+            .addEventListener("submit", async function (event) {
                 event.preventDefault();
 
-                const description =
-                    document.getElementById("expenseDescription")
-                        .value.trim();
+                const btn = document.getElementById("saveExpenseBtn");
+                btn.disabled = true;
+                btn.textContent = "Saving...";
 
-                const amount =
-                    Number(document.getElementById("expenseAmount").value);
+                const formData = new FormData(this);
 
-                if (!description || !Number.isFinite(amount) || amount <= 0) {
-                    return;
+                try {
+                    const response = await fetch("/api/transactions/expenses", {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        this.reset();
+                        closeExpenseForm();
+                        await fetchExpensesFromDb();
+                    } else {
+                        alert(result.message || "Failed to save expense.");
+                    }
+                } catch (err) {
+                    alert("Network error while saving expense.");
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = "Save Expense";
                 }
-
-                expenseEntries.push({
-                    description,
-                    date: document.getElementById("expenseDate").value,
-                    amount,
-                    unit: document.getElementById("expenseUnit").value,
-                    account: document.getElementById("expenseAccount").value
-                });
-
-                this.reset();
-                closeExpenseForm();
-                renderExpenses();
             });
+
+        async function loadCategories() {
+            try {
+                const response = await fetch("/api/categories?type=expense");
+                if (response.ok) {
+                    const data = await response.json();
+                    const categories = data.items || data.categories || [];
+                    const modalSelect = document.getElementById("expenseCategory");
+                    const filterSelect = document.getElementById("expenseCategoryFilter");
+                    if (modalSelect) {
+                        if (categories.length > 0) {
+                            modalSelect.innerHTML = categories.map(c => `<option value="${escapeExpenseHtml(c.name)}">${escapeExpenseHtml(c.name)}</option>`).join("");
+                        } else {
+                            modalSelect.innerHTML = `<option value="" disabled selected>No categories defined (add in Settings)</option>`;
+                        }
+                    }
+                    if (filterSelect) {
+                        const currentVal = filterSelect.value;
+                        filterSelect.innerHTML = `<option value="all">All categories</option>` +
+                            categories.map(c => `<option value="${escapeExpenseHtml(c.name)}">${escapeExpenseHtml(c.name)}</option>`).join("");
+                        filterSelect.value = currentVal;
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load expense categories:", err);
+            }
+        }
 
         function renderExpenses() {
             const search = document.getElementById("expenseSearch")
@@ -241,14 +426,17 @@
             const unit = document.getElementById("expenseUnitFilter").value;
             const account =
                 document.getElementById("expenseAccountFilter").value;
+            const category = document.getElementById("expenseCategoryFilter") ? document.getElementById("expenseCategoryFilter").value : "all";
 
             const filtered = expenseEntries.filter(entry =>
                 (
                     entry.description.toLowerCase().includes(search) ||
-                    entry.account.toLowerCase().includes(search)
+                    entry.account.toLowerCase().includes(search) ||
+                    (entry.category && entry.category.toLowerCase().includes(search))
                 ) &&
                 (unit === "all" || entry.unit === unit) &&
-                (account === "all" || entry.account === account)
+                (account === "all" || entry.account === account) &&
+                (category === "all" || (entry.category || "General") === category)
             );
 
             const rows = document.getElementById("expenseRows");
@@ -260,7 +448,7 @@
 
                 rows.innerHTML = `
                     <tr>
-                        <td colspan="5" class="text-center py-5">
+                        <td colspan="7" class="text-center py-5">
                             ${escapeExpenseHtml(message)}
                         </td>
                     </tr>`;
@@ -269,16 +457,23 @@
                     <tr>
                         <td>${escapeExpenseHtml(entry.date)}</td>
                         <td>${escapeExpenseHtml(entry.description)}</td>
+                        <td><span class="badge ${entry.category === 'Bill Payment' ? 'bg-primary-subtle text-primary border' : 'bg-light text-dark border'}">${escapeExpenseHtml(entry.category || "General")}</span></td>
                         <td>${escapeExpenseHtml(entry.unit)}</td>
                         <td>${escapeExpenseHtml(entry.account)}</td>
                         <td class="text-end expense-amount">
                             − ${formatExpenseMoney(entry.amount)}
                         </td>
+                        <td class="text-center">
+                            ${canDirectlyDelete
+                                ? `<button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteTransaction(${entry.id})">Delete</button>`
+                                : `<button type="button" class="btn btn-sm btn-outline-warning" onclick="openRequestDeletionModal(${entry.id}, '${escapeExpenseHtml(entry.description)}')">Request Deletion</button>`
+                            }
+                        </td>
                     </tr>
                 `).join("");
             }
 
-            const total = expenseEntries.reduce(
+            const total = filtered.reduce(
                 (sum, entry) => sum + entry.amount, 0
             );
 
@@ -286,19 +481,21 @@
                 formatExpenseMoney(total);
 
             document.getElementById("expenseCount").textContent =
-                expenseEntries.length;
+                filtered.length;
 
             document.getElementById("averageExpense").textContent =
                 formatExpenseMoney(
-                    expenseEntries.length ? total / expenseEntries.length : 0
+                    filtered.length ? total / filtered.length : 0
                 );
         }
 
-        ["expenseSearch", "expenseUnitFilter", "expenseAccountFilter"]
+        ["expenseSearch", "expenseUnitFilter", "expenseAccountFilter", "expenseCategoryFilter"]
             .forEach(id => {
                 const element = document.getElementById(id);
-                element.addEventListener("input", renderExpenses);
-                element.addEventListener("change", renderExpenses);
+                if (element) {
+                    element.addEventListener("input", renderExpenses);
+                    element.addEventListener("change", renderExpenses);
+                }
             });
 
         document.getElementById("expenseModal")
@@ -308,12 +505,22 @@
                 }
             });
 
+        document.getElementById("requestDeletionModal")
+            .addEventListener("click", function (event) {
+                if (event.target === this) {
+                    closeRequestDeletionModal();
+                }
+            });
+
         document.addEventListener("keydown", function (event) {
             if (event.key === "Escape") {
                 closeExpenseForm();
+                closeRequestDeletionModal();
             }
         });
 
-        renderExpenses();
+        loadCategories();
+        loadPaymentAccounts();
+        fetchExpensesFromDb();
     </script>
 }

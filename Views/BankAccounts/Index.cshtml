@@ -6,28 +6,39 @@
 <div class="page-header">
     <div>
         <h1>Bank Accounts</h1>
-        <p>Manage cash and bank accounts used across your organization.</p>
+        <p>Manage cash and bank accounts.</p>
     </div>
 
-    <button type="button" class="btn btn-primary" onclick="openAccountForm()">
-        + Add Account
-    </button>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-primary d-inline-flex align-items-center gap-1" onclick="openTransferForm()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+            <span>Transfer Funds</span>
+        </button>
+        <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-1" onclick="openAccountForm()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Add Account</span>
+        </button>
+    </div>
 </div>
 
 <section class="summary-grid">
     <article class="summary-card">
         <div class="summary-card-top">
             <span>Total Accounts</span>
-            <span class="summary-icon">▣</span>
+            <span class="summary-icon" style="background:#eff6ff;color:#2563eb;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+            </span>
         </div>
-        <h2 id="totalAccounts">1</h2>
-        <p>Cash and bank accounts</p>
+        <h2 id="totalAccounts">0</h2>
+        <p>Cash and bank registers</p>
     </article>
 
     <article class="summary-card">
         <div class="summary-card-top">
             <span>Total Balance</span>
-            <span class="summary-icon">₨</span>
+            <span class="summary-icon" style="background:#ecfdf5;color:#059669;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            </span>
         </div>
         <h2 id="totalBalance">Rs. 0</h2>
         <p>Combined opening balances</p>
@@ -36,20 +47,16 @@
     <article class="summary-card">
         <div class="summary-card-top">
             <span>Bank Accounts</span>
-            <span class="summary-icon">▤</span>
+            <span class="summary-icon" style="background:#f5f3ff;color:#7c3aed;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 10h18M5 10v11M19 10v11M9 10v11M15 10v11M12 2l10 5H2l10-5z"></path></svg>
+            </span>
         </div>
         <h2 id="bankAccountCount">0</h2>
-        <p>Registered bank accounts</p>
+        <p>Commercial banking facilities</p>
     </article>
 </section>
 
 <section class="panel">
-    <div class="panel-header">
-        <div>
-            <h3>Accounts overview</h3>
-            <p>Review account details and opening balances.</p>
-        </div>
-    </div>
 
     <div class="transaction-toolbar">
         <input id="accountSearch" class="form-control" type="search"
@@ -84,15 +91,11 @@
             <tbody id="accountRows"></tbody>
         </table>
     </div>
-
-    <p class="preview-note">
-        Preview only: account details are held temporarily in the browser.
-        Current balances will be connected to transactions during backend development.
-    </p>
 </section>
 
 <div id="accountModal" class="transaction-modal" hidden>
     <form id="accountForm" class="transaction-form">
+        @Html.AntiForgeryToken()
         <div class="form-heading">
             <div>
                 <h2>Add Account</h2>
@@ -103,63 +106,89 @@
         </div>
 
         <label for="accountName">Account name</label>
-        <input id="accountName" class="form-control" required maxlength="100"
+        <input id="accountName" name="name" class="form-control" required maxlength="100"
                placeholder="e.g. Main Office Cash" />
 
         <label for="accountType">Account type</label>
-        <select id="accountType" class="form-select" required>
+        <select id="accountType" name="type" class="form-select" required>
             <option value="Cash">Cash</option>
             <option value="Bank">Bank</option>
         </select>
 
         <div id="bankFields">
             <label for="bankName">Bank / institution</label>
-            <input id="bankName" class="form-control" maxlength="100"
-                   placeholder="e.g. Bank name" />
+            <input id="bankName" name="bank" class="form-control" maxlength="100"
+                   placeholder="e.g. Meezan Bank" />
 
             <label for="accountNumber">Account number (optional)</label>
-            <input id="accountNumber" class="form-control" maxlength="40"
+            <input id="accountNumber" name="number" class="form-control" maxlength="40"
                    placeholder="Enter account number" />
         </div>
 
         <label for="openingBalance">Opening balance (PKR)</label>
-        <input id="openingBalance" class="form-control" type="number"
+        <input id="openingBalance" name="openingBalance" class="form-control" type="number"
                min="0" step="0.01" value="0" required />
 
         <div class="form-actions">
             <button type="button" class="btn btn-outline-secondary"
                     onclick="closeAccountForm()">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save Account</button>
+            <button type="submit" class="btn btn-primary" id="saveAccountBtn">Save Account</button>
+        </div>
+    </form>
+</div>
+
+<div id="transferModal" class="transaction-modal" hidden>
+    <form id="transferForm" class="transaction-form">
+        @Html.AntiForgeryToken()
+        <div class="form-heading">
+            <div>
+                <h2>Transfer Funds</h2>
+                <p>Transfer funds between cash registers and bank accounts.</p>
+            </div>
+            <button type="button" class="close-button"
+                    aria-label="Close form" onclick="closeTransferForm()">×</button>
+        </div>
+
+        <label for="transferFromAccount">Source Account (Debit)</label>
+        <select id="transferFromAccount" name="fromAccountId" class="form-select" required>
+            <option value="">Select source account...</option>
+        </select>
+
+        <label for="transferToAccount">Destination Account (Credit)</label>
+        <select id="transferToAccount" name="toAccountId" class="form-select" required>
+            <option value="">Select destination account...</option>
+        </select>
+
+        <label for="transferAmount">Transfer Amount (PKR)</label>
+        <input id="transferAmount" name="amount" class="form-control" type="number"
+               min="1" step="0.01" required placeholder="Enter amount to transfer" />
+
+        <label for="transferNotes">Transfer Notes / Reason (Optional)</label>
+        <input id="transferNotes" name="notes" class="form-control" maxlength="200"
+               placeholder="e.g. Daily cash deposit to Meezan Bank" />
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-outline-secondary"
+                    onclick="closeTransferForm()">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="saveTransferBtn">Execute Transfer</button>
         </div>
     </form>
 </div>
 
 @section Scripts {
     <script>
-        const accounts = [
-            {
-                id: 1,
-                name: "Main Cash",
-                type: "Cash",
-                bank: "—",
-                number: "—",
-                openingBalance: 0,
-                active: true
-            }
-        ];
-
-        let nextAccountId = 2;
+        let accounts = [];
 
         const accountMoneyFormat = new Intl.NumberFormat("en-PK", {
             maximumFractionDigits: 2
         });
 
         function formatAccountMoney(amount) {
-            return "Rs. " + accountMoneyFormat.format(amount);
+            return "Rs. " + accountMoneyFormat.format(amount || 0);
         }
 
         function escapeAccountHtml(value) {
-            return String(value).replace(/[&<>"']/g, character => ({
+            return String(value ?? "").replace(/[&<>"']/g, character => ({
                 "&": "&amp;",
                 "<": "&lt;",
                 ">": "&gt;",
@@ -186,49 +215,71 @@
 
         document.getElementById("accountType").addEventListener("change", updateBankFields);
 
-        document.getElementById("accountForm").addEventListener("submit", function (event) {
+        async function fetchAccountsFromDb() {
+            try {
+                const response = await fetch("/api/bankaccounts");
+                if (!response.ok) throw new Error("Failed to load accounts");
+                const data = await response.json();
+                accounts = data.items || [];
+                renderAccounts();
+            } catch (err) {
+                console.error("Error loading accounts:", err);
+            }
+        }
+
+        document.getElementById("accountForm").addEventListener("submit", async function (event) {
             event.preventDefault();
 
-            const type = document.getElementById("accountType").value;
-            const name = document.getElementById("accountName").value.trim();
-            const bank = document.getElementById("bankName").value.trim();
-            const number = document.getElementById("accountNumber").value.trim();
-            const openingBalance = Number(document.getElementById("openingBalance").value);
+            const btn = document.getElementById("saveAccountBtn");
+            btn.disabled = true;
+            btn.textContent = "Saving...";
 
-            if (!name || !Number.isFinite(openingBalance) || openingBalance < 0) {
-                alert("Enter a valid account name and opening balance.");
-                return;
+            const formData = new FormData(this);
+
+            try {
+                const response = await fetch("/api/bankaccounts", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    this.reset();
+                    document.getElementById("openingBalance").value = "0";
+                    document.getElementById("accountType").value = "Cash";
+                    updateBankFields();
+                    closeAccountForm();
+                    await fetchAccountsFromDb();
+                } else {
+                    alert(result.message || "Failed to save account.");
+                }
+            } catch (err) {
+                alert("Network error while saving account.");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Save Account";
             }
-
-            if (type === "Bank" && !bank) {
-                alert("Please enter the bank or institution name.");
-                return;
-            }
-
-            accounts.push({
-                id: nextAccountId++,
-                name,
-                type,
-                bank: type === "Bank" ? bank : "—",
-                number: type === "Bank" && number ? number : "—",
-                openingBalance,
-                active: true
-            });
-
-            this.reset();
-            document.getElementById("openingBalance").value = "0";
-            document.getElementById("accountType").value = "Cash";
-            updateBankFields();
-            closeAccountForm();
-            renderAccounts();
         });
 
-        function toggleAccountStatus(id) {
-            const account = accounts.find(item => item.id === id);
-            if (!account) return;
+        async function toggleAccountStatus(id) {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
+            const formData = new FormData();
+            formData.append("id", id);
+            formData.append("__RequestVerificationToken", token);
 
-            account.active = !account.active;
-            renderAccounts();
+            try {
+                const response = await fetch("/api/bankaccounts/toggle-status", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    await fetchAccountsFromDb();
+                }
+            } catch (err) {
+                alert("Error toggling account status.");
+            }
         }
 
         function renderAccounts() {
@@ -257,7 +308,7 @@
                         <td>${escapeAccountHtml(account.bank)}</td>
                         <td>${escapeAccountHtml(account.number)}</td>
                         <td>${escapeAccountHtml(account.type)}</td>
-                        <td class="text-end">${formatAccountMoney(account.openingBalance)}</td>
+                        <td class="text-end">${formatAccountMoney(account.currentBalance ?? account.openingBalance)}</td>
                         <td>
                             <span class="status-badge ${account.active ? "status-paid" : "status-pending"}">
                                 ${account.active ? "Active" : "Inactive"}
@@ -279,7 +330,7 @@
             document.getElementById("totalAccounts").textContent = accounts.length;
             document.getElementById("totalBalance").textContent =
                 formatAccountMoney(accounts.reduce((sum, account) =>
-                    sum + account.openingBalance, 0));
+                    sum + (account.currentBalance ?? account.openingBalance), 0));
             document.getElementById("bankAccountCount").textContent =
                 accounts.filter(account => account.type === "Bank").length;
         }
@@ -294,11 +345,101 @@
             if (event.target === this) closeAccountForm();
         });
 
+        function openTransferForm() {
+            const activeAccounts = accounts.filter(a => a.active);
+            if (activeAccounts.length < 2) {
+                alert("You need at least two active accounts to transfer funds.");
+                return;
+            }
+
+            const fromSelect = document.getElementById("transferFromAccount");
+            const toSelect = document.getElementById("transferToAccount");
+
+            const optionsHtml = activeAccounts.map(a => 
+                `<option value="${a.id}">${escapeAccountHtml(a.name)} (Avail: ${formatAccountMoney(a.currentBalance)})</option>`
+            ).join("");
+
+            fromSelect.innerHTML = `<option value="">Select source account...</option>` + optionsHtml;
+            toSelect.innerHTML = `<option value="">Select destination account...</option>` + optionsHtml;
+
+            if (activeAccounts.length >= 2) {
+                fromSelect.selectedIndex = 1;
+                toSelect.selectedIndex = 2;
+            }
+
+            document.getElementById("transferModal").hidden = false;
+            document.getElementById("transferAmount").value = "";
+            document.getElementById("transferNotes").value = "";
+            document.getElementById("transferAmount").focus();
+        }
+
+        function closeTransferForm() {
+            document.getElementById("transferModal").hidden = true;
+        }
+
+        document.getElementById("transferForm").addEventListener("submit", async function (event) {
+            event.preventDefault();
+
+            const fromId = document.getElementById("transferFromAccount").value;
+            const toId = document.getElementById("transferToAccount").value;
+            const amount = parseFloat(document.getElementById("transferAmount").value);
+
+            if (!fromId || !toId) {
+                alert("Please select both source and destination accounts.");
+                return;
+            }
+
+            if (fromId === toId) {
+                alert("Source and destination accounts must be different.");
+                return;
+            }
+
+            if (!amount || amount <= 0) {
+                alert("Please enter a valid transfer amount greater than zero.");
+                return;
+            }
+
+            const btn = document.getElementById("saveTransferBtn");
+            btn.disabled = true;
+            btn.textContent = "Transferring...";
+
+            const formData = new FormData(this);
+
+            try {
+                const response = await fetch("/api/bankaccounts/transfer", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert(result.message || "Transfer completed successfully!");
+                    this.reset();
+                    closeTransferForm();
+                    await fetchAccountsFromDb();
+                } else {
+                    alert(result.message || "Failed to complete transfer.");
+                }
+            } catch (err) {
+                alert("Network error while processing fund transfer.");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Execute Transfer";
+            }
+        });
+
+        document.getElementById("transferModal").addEventListener("click", function (event) {
+            if (event.target === this) closeTransferForm();
+        });
+
         document.addEventListener("keydown", function (event) {
-            if (event.key === "Escape") closeAccountForm();
+            if (event.key === "Escape") {
+                closeAccountForm();
+                closeTransferForm();
+            }
         });
 
         updateBankFields();
-        renderAccounts();
+        fetchAccountsFromDb();
     </script>
 }

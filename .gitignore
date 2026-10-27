@@ -1,0 +1,46 @@
+# Build and output directories
+bin/
+obj/
+out/
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.sln.docstates
+
+# Database files
+*.mdf
+*.ldf
+*.ndf
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs and diagnostics
+*.log
+*.tmp
+*.temp
+TestResults/
+*.opencover.xml
+
+# Secrets and environment configs containing credentials
+appsettings.Production.json
+appsettings.*.local.json
+secrets.json
+*.env
+*.env.*
+*.pfx
+*.cer
+*.key
+
+# Test & Scratch scripts
+test_*.mjs
+scratch/
+
+# OS generated files
+.DS_Store
+Thumbs.db

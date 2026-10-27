@@ -1,12 +1,23 @@
 
 @{
     ViewData["Title"] = "Revenue";
+    var userRole = Context.Session.GetString("UserRole") ?? "Accountant";
+    var allowedUnits = (ViewData["AllowedUnits"] as List<string>) ?? new List<string>();
 }
 
-<div class="page-header">
+<ul class="nav nav-pills mb-3 gap-2">
+    <li class="nav-item">
+        <a class="nav-link active fw-semibold px-3 py-2" asp-controller="Transactions" asp-action="Revenue" style="border-radius:8px;font-size:13px;">Revenue Ledger</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link fw-semibold px-3 py-2 text-secondary" asp-controller="Transactions" asp-action="Expenses" style="border-radius:8px;font-size:13px;">Expense Ledger</a>
+    </li>
+</ul>
+
+<div class="page-header mt-2">
     <div>
         <h1>Revenue</h1>
-        <p>Record and review income received across your organization.</p>
+        <p>Record and review income across your units.</p>
     </div>
 
     <button type="button" class="btn btn-primary"
@@ -19,25 +30,31 @@
     <article class="summary-card">
         <div class="summary-card-top">
             <span>Total Revenue</span>
-            <span class="summary-icon">↗</span>
+            <span class="summary-icon" style="background:#ecfdf5;color:#059669;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"></polyline></svg>
+            </span>
         </div>
         <h2 id="totalRevenue">Rs. 0</h2>
-        <p>Revenue recorded in this preview</p>
+        <p>Total recorded income</p>
     </article>
 
     <article class="summary-card">
         <div class="summary-card-top">
             <span>Revenue Entries</span>
-            <span class="summary-icon">▤</span>
+            <span class="summary-icon" style="background:#eff6ff;color:#2563eb;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+            </span>
         </div>
         <h2 id="revenueCount">0</h2>
-        <p>Number of recorded entries</p>
+        <p>Total transaction records</p>
     </article>
 
     <article class="summary-card">
         <div class="summary-card-top">
             <span>Average Revenue</span>
-            <span class="summary-icon">＝</span>
+            <span class="summary-icon" style="background:#f5f3ff;color:#7c3aed;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            </span>
         </div>
         <h2 id="averageRevenue">Rs. 0</h2>
         <p>Average amount per entry</p>
@@ -45,12 +62,6 @@
 </section>
 
 <section class="panel">
-    <div class="panel-header">
-        <div>
-            <h3>Revenue Entries</h3>
-            <p>Search and review income by unit or payment account.</p>
-        </div>
-    </div>
 
     <div class="transaction-toolbar">
         <input id="revenueSearch"
@@ -59,12 +70,18 @@
                placeholder="Search description or account..." />
 
         <select id="revenueUnitFilter" class="form-select">
-            <option value="all">All units</option>
-            <option value="School">School</option>
-            <option value="College">College</option>
-            <option value="BS Program">BS Program</option>
-            <option value="Training Center">Training Center</option>
-            <option value="Evening Academy">Evening Academy</option>
+            @if (allowedUnits.Count > 1)
+            {
+                <option value="all">All units</option>
+            }
+            @foreach (var u in allowedUnits)
+            {
+                <option value="@u">@u</option>
+            }
+        </select>
+
+        <select id="revenueCategoryFilter" class="form-select">
+            <option value="all">All categories</option>
         </select>
 
         <select id="revenueAccountFilter" class="form-select">
@@ -81,13 +98,15 @@
                     <th>Date</th>
                     <th>Description</th>
                     <th>Unit</th>
+                    <th>Category</th>
                     <th>Account</th>
                     <th class="text-end">Amount</th>
+                    <th class="text-center">Action</th>
                 </tr>
             </thead>
             <tbody id="revenueRows">
                 <tr>
-                    <td colspan="5" class="text-center py-5">
+                    <td colspan="7" class="text-center py-5">
                         <strong>No revenue entries yet</strong>
                         <p class="mb-0 mt-2">
                             Add your first revenue entry to get started.
@@ -97,15 +116,11 @@
             </tbody>
         </table>
     </div>
-
-    <p class="preview-note">
-        Preview mode: entries are temporary and will be lost when
-        the page refreshes. Database saving will be implemented later.
-    </p>
 </section>
 
 <div id="revenueModal" class="transaction-modal" hidden>
     <form id="revenueForm" class="transaction-form">
+        @Html.AntiForgeryToken()
         <div class="form-heading">
             <div>
                 <h2>Add Revenue</h2>
@@ -122,6 +137,7 @@
 
         <label for="revenueDescription">Description</label>
         <input id="revenueDescription"
+               name="description"
                class="form-control"
                required
                maxlength="120"
@@ -129,12 +145,14 @@
 
         <label for="revenueDate">Date received</label>
         <input id="revenueDate"
+               name="date"
                class="form-control"
                type="date"
                required />
 
         <label for="revenueAmount">Amount (PKR)</label>
         <input id="revenueAmount"
+               name="amount"
                class="form-control"
                type="number"
                min="0.01"
@@ -143,16 +161,20 @@
                placeholder="Enter amount" />
 
         <label for="revenueUnit">Organizational unit</label>
-        <select id="revenueUnit" class="form-select" required>
-            <option value="School">School</option>
-            <option value="College">College</option>
-            <option value="BS Program">BS Program</option>
-            <option value="Training Center">Training Center</option>
-            <option value="Evening Academy">Evening Academy</option>
+        <select id="revenueUnit" name="unit" class="form-select" required>
+            @foreach (var u in allowedUnits)
+            {
+                <option value="@u">@u</option>
+            }
+        </select>
+
+        <label for="revenueCategory">Revenue category</label>
+        <select id="revenueCategory" name="category" class="form-select" required>
+            <option value="" disabled selected>Select category</option>
         </select>
 
         <label for="revenueAccount">Payment account</label>
-        <select id="revenueAccount" class="form-select" required>
+        <select id="revenueAccount" name="account" class="form-select" required>
             <option value="Cash">Cash</option>
             <option value="Bank Account">Bank Account</option>
         </select>
@@ -164,31 +186,59 @@
                 Cancel
             </button>
 
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="btn btn-primary" id="saveRevenueBtn">
                 Save Revenue
             </button>
         </div>
     </form>
 </div>
 
+<div id="requestDeletionModal" class="transaction-modal" hidden>
+    <form id="requestDeletionForm" class="transaction-form">
+        @Html.AntiForgeryToken()
+        <input type="hidden" id="reqTxId" name="transactionId" />
+        <div class="form-heading">
+            <div>
+                <h2>Request Deletion</h2>
+                <p>Submit a deletion request for administrator approval.</p>
+            </div>
+            <button type="button" class="close-button" aria-label="Close form" onclick="closeRequestDeletionModal()">×</button>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label text-muted">Transaction Details</label>
+            <div id="reqTxDesc" class="fw-bold fs-6"></div>
+        </div>
+
+        <label for="reqTxReason">Reason for deletion request</label>
+        <textarea id="reqTxReason" name="reason" class="form-control" rows="3" required
+                  placeholder="Explain why this transaction should be deleted..."></textarea>
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-outline-secondary" onclick="closeRequestDeletionModal()">Cancel</button>
+            <button type="submit" class="btn btn-warning" id="submitReqBtn">Submit Request</button>
+        </div>
+    </form>
+</div>
+
 @section Scripts {
     <script>
-        const revenueEntries = [];
+        let revenueEntries = [];
+        const currentUserRole = '@userRole';
+        const canDirectlyDelete = currentUserRole === "Super Admin" || currentUserRole === "Organization Owner";
 
         const revenueMoneyFormat = new Intl.NumberFormat("en-PK", {
             maximumFractionDigits: 2
         });
 
         function formatRevenueMoney(amount) {
-            return "Rs. " + revenueMoneyFormat.format(amount);
+            return "Rs. " + revenueMoneyFormat.format(amount || 0);
         }
 
         function openRevenueForm() {
             document.getElementById("revenueModal").hidden = false;
-
             document.getElementById("revenueDate").value =
                 new Date().toLocaleDateString("en-CA");
-
             document.getElementById("revenueDescription").focus();
         }
 
@@ -196,8 +246,20 @@
             document.getElementById("revenueModal").hidden = true;
         }
 
+        function openRequestDeletionModal(id, desc) {
+            document.getElementById("reqTxId").value = id;
+            document.getElementById("reqTxDesc").textContent = desc;
+            document.getElementById("reqTxReason").value = "";
+            document.getElementById("requestDeletionModal").hidden = false;
+            document.getElementById("reqTxReason").focus();
+        }
+
+        function closeRequestDeletionModal() {
+            document.getElementById("requestDeletionModal").hidden = true;
+        }
+
         function escapeRevenueHtml(value) {
-            return String(value).replace(/[&<>"']/g, character => ({
+            return String(value ?? "").replace(/[&<>"']/g, character => ({
                 "&": "&amp;",
                 "<": "&lt;",
                 ">": "&gt;",
@@ -206,33 +268,153 @@
             })[character]);
         }
 
+        async function loadPaymentAccounts() {
+            try {
+                const response = await fetch("/api/bankaccounts");
+                if (response.ok) {
+                    const data = await response.json();
+                    const accounts = data.items || [];
+                    const modalSelect = document.getElementById("revenueAccount");
+                    const filterSelect = document.getElementById("revenueAccountFilter");
+                    
+                    if (modalSelect) {
+                        modalSelect.innerHTML = `<option value="Cash">Cash</option>` +
+                            accounts.map(a => `<option value="${escapeRevenueHtml(a.accountName)}">${escapeRevenueHtml(a.accountName)} (${escapeRevenueHtml(a.bankName)})</option>`).join("");
+                    }
+                    if (filterSelect) {
+                        const currentVal = filterSelect.value;
+                        filterSelect.innerHTML = `<option value="all">All accounts</option><option value="Cash">Cash</option>` +
+                            accounts.map(a => `<option value="${escapeRevenueHtml(a.accountName)}">${escapeRevenueHtml(a.accountName)}</option>`).join("");
+                        filterSelect.value = currentVal;
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load bank accounts:", err);
+            }
+        }
+
+        async function fetchRevenueFromDb() {
+            try {
+                const response = await fetch("/api/transactions/revenue");
+                if (!response.ok) throw new Error("Failed to load revenue");
+                const data = await response.json();
+                revenueEntries = data.items || [];
+                renderRevenue();
+            } catch (err) {
+                console.error("Error loading revenue entries:", err);
+            }
+        }
+
+        async function deleteTransaction(id) {
+            if (!confirm(`Are you sure you want to permanently delete Transaction #${id}? This will update account balances and generate an audit log.`)) {
+                return;
+            }
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
+            const formData = new FormData();
+            formData.append("__RequestVerificationToken", token);
+
+            try {
+                const response = await fetch(`/api/transactions/delete/${id}`, {
+                    method: "POST",
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.success) {
+                    await fetchRevenueFromDb();
+                } else {
+                    alert(result.message || "Failed to delete transaction.");
+                }
+            } catch (err) {
+                alert("Network error while deleting transaction.");
+            }
+        }
+
+        document.getElementById("requestDeletionForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+            const btn = document.getElementById("submitReqBtn");
+            btn.disabled = true;
+            btn.textContent = "Submitting...";
+
+            const formData = new FormData(this);
+            try {
+                const response = await fetch("/api/transactions/request-deletion", {
+                    method: "POST",
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert(result.message);
+                    closeRequestDeletionModal();
+                } else {
+                    alert(result.message || "Failed to submit deletion request.");
+                }
+            } catch (err) {
+                alert("Network error while submitting deletion request.");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Submit Request";
+            }
+        });
+
         document.getElementById("revenueForm")
-            .addEventListener("submit", function (event) {
+            .addEventListener("submit", async function (event) {
                 event.preventDefault();
 
-                const description =
-                    document.getElementById("revenueDescription")
-                        .value.trim();
+                const btn = document.getElementById("saveRevenueBtn");
+                btn.disabled = true;
+                btn.textContent = "Saving...";
 
-                const amount =
-                    Number(document.getElementById("revenueAmount").value);
+                const formData = new FormData(this);
 
-                if (!description || !Number.isFinite(amount) || amount <= 0) {
-                    return;
+                try {
+                    const response = await fetch("/api/transactions/revenue", {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        this.reset();
+                        closeRevenueForm();
+                        await fetchRevenueFromDb();
+                    } else {
+                        alert(result.message || "Failed to save revenue entry.");
+                    }
+                } catch (err) {
+                    alert("Network error while saving revenue entry.");
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = "Save Revenue";
                 }
-
-                revenueEntries.push({
-                    description,
-                    date: document.getElementById("revenueDate").value,
-                    amount,
-                    unit: document.getElementById("revenueUnit").value,
-                    account: document.getElementById("revenueAccount").value
-                });
-
-                this.reset();
-                closeRevenueForm();
-                renderRevenue();
             });
+
+        async function loadCategories() {
+            try {
+                const response = await fetch("/api/categories?type=revenue");
+                if (response.ok) {
+                    const data = await response.json();
+                    const items = data.items || data.categories || [];
+                    const modalSelect = document.getElementById("revenueCategory");
+                    const filterSelect = document.getElementById("revenueCategoryFilter");
+                    if (modalSelect) {
+                        if (items.length > 0) {
+                            modalSelect.innerHTML = items.map(c => `<option value="${escapeRevenueHtml(c.name)}">${escapeRevenueHtml(c.name)}</option>`).join("");
+                        } else {
+                            modalSelect.innerHTML = `<option value="" disabled selected>No categories defined (add in Settings)</option>`;
+                        }
+                    }
+                    if (filterSelect) {
+                        const currentVal = filterSelect.value;
+                        filterSelect.innerHTML = `<option value="all">All categories</option>` +
+                            items.map(c => `<option value="${escapeRevenueHtml(c.name)}">${escapeRevenueHtml(c.name)}</option>`).join("");
+                        filterSelect.value = currentVal;
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load revenue categories:", err);
+            }
+        }
 
         function renderRevenue() {
             const search = document.getElementById("revenueSearch")
@@ -241,14 +423,18 @@
             const unit = document.getElementById("revenueUnitFilter").value;
             const account =
                 document.getElementById("revenueAccountFilter").value;
+            const categoryFilter = document.getElementById("revenueCategoryFilter")
+                ? document.getElementById("revenueCategoryFilter").value : "all";
 
             const filtered = revenueEntries.filter(entry =>
                 (
                     entry.description.toLowerCase().includes(search) ||
-                    entry.account.toLowerCase().includes(search)
+                    entry.account.toLowerCase().includes(search) ||
+                    (entry.category && entry.category.toLowerCase().includes(search))
                 ) &&
                 (unit === "all" || entry.unit === unit) &&
-                (account === "all" || entry.account === account)
+                (account === "all" || entry.account === account) &&
+                (categoryFilter === "all" || entry.category === categoryFilter)
             );
 
             const rows = document.getElementById("revenueRows");
@@ -260,7 +446,7 @@
 
                 rows.innerHTML = `
                     <tr>
-                        <td colspan="5" class="text-center py-5">
+                        <td colspan="7" class="text-center py-5">
                             ${escapeRevenueHtml(message)}
                         </td>
                     </tr>`;
@@ -270,15 +456,22 @@
                         <td>${escapeRevenueHtml(entry.date)}</td>
                         <td>${escapeRevenueHtml(entry.description)}</td>
                         <td>${escapeRevenueHtml(entry.unit)}</td>
+                        <td><span class="badge bg-light text-dark border">${escapeRevenueHtml(entry.category || "General")}</span></td>
                         <td>${escapeRevenueHtml(entry.account)}</td>
                         <td class="text-end income-amount">
                             + ${formatRevenueMoney(entry.amount)}
+                        </td>
+                        <td class="text-center">
+                            ${canDirectlyDelete
+                                ? `<button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteTransaction(${entry.id})">Delete</button>`
+                                : `<button type="button" class="btn btn-sm btn-outline-warning" onclick="openRequestDeletionModal(${entry.id}, '${escapeRevenueHtml(entry.description)}')">Request Deletion</button>`
+                            }
                         </td>
                     </tr>
                 `).join("");
             }
 
-            const total = revenueEntries.reduce(
+            const total = filtered.reduce(
                 (sum, entry) => sum + entry.amount, 0
             );
 
@@ -286,19 +479,21 @@
                 formatRevenueMoney(total);
 
             document.getElementById("revenueCount").textContent =
-                revenueEntries.length;
+                filtered.length;
 
             document.getElementById("averageRevenue").textContent =
                 formatRevenueMoney(
-                    revenueEntries.length ? total / revenueEntries.length : 0
+                    filtered.length ? total / filtered.length : 0
                 );
         }
 
-        ["revenueSearch", "revenueUnitFilter", "revenueAccountFilter"]
+        ["revenueSearch", "revenueUnitFilter", "revenueCategoryFilter", "revenueAccountFilter"]
             .forEach(id => {
                 const element = document.getElementById(id);
-                element.addEventListener("input", renderRevenue);
-                element.addEventListener("change", renderRevenue);
+                if (element) {
+                    element.addEventListener("input", renderRevenue);
+                    element.addEventListener("change", renderRevenue);
+                }
             });
 
         document.getElementById("revenueModal")
@@ -308,12 +503,22 @@
                 }
             });
 
+        document.getElementById("requestDeletionModal")
+            .addEventListener("click", function (event) {
+                if (event.target === this) {
+                    closeRequestDeletionModal();
+                }
+            });
+
         document.addEventListener("keydown", function (event) {
             if (event.key === "Escape") {
                 closeRevenueForm();
+                closeRequestDeletionModal();
             }
         });
 
-        renderRevenue();
+        loadCategories();
+        loadPaymentAccounts();
+        fetchRevenueFromDb();
     </script>
 }

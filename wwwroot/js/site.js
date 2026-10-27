@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // Close modals when the user clicks the backdrop.
-    document.querySelectorAll("[data-modal-backdrop]").forEach(function (modal) {
+    document.querySelectorAll("[data-modal-backdrop]").forEach(function(modal) { 
         modal.addEventListener("click", function (event) {
             if (event.target === modal) {
                 modal.hidden = true;

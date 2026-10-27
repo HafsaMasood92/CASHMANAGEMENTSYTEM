@@ -1,0 +1,620 @@
+
+@{
+    ViewData["Title"] = "Edutech Cash Management";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edutech | Cash Management System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #172554;
+            --blue: #3457d5;
+            --blue-light: #edf2ff;
+            --bg: #f5f7fb;
+            --text: #1e293b;
+            --muted: #718096;
+            --border: #e6eaf1;
+            --green: #15966b;
+            --red: #d84c5b;
+            --orange: #d97706;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 13px;
+        }
+        button, input, select { font: inherit; }
+        button { cursor: pointer; }
+        .hidden { display: none !important; }
+        .muted { color: var(--muted); }
+        .brand { display: flex; align-items: center; gap: 11px; font-size: 17px; font-weight: 800; color: var(--navy); }
+        .brand-mark {
+            height: 39px; width: 39px; border-radius: 12px;
+            background: var(--blue); color: white; display: grid; place-items: center;
+            font-size: 20px; box-shadow: 0 5px 14px #3457d533;
+        }
+        .eyebrow { text-transform: uppercase; letter-spacing: 1.3px; font-size: 10px; font-weight: 800; color: var(--blue); }
+        .btn {
+            border: 0; background: var(--blue); color: white; border-radius: 9px;
+            padding: 11px 16px; font-weight: 700; transition: .2s;
+        }
+        .btn:hover { background: #2645bc; }
+        .btn-outline { background: white; color: var(--text); border: 1px solid var(--border); }
+        .btn-outline:hover { background: #f7f9fc; }
+        .btn-sm { padding: 8px 11px; font-size: 12px; }
+        .pill { display: inline-flex; align-items: center; gap: 5px; border-radius: 20px; padding: 5px 9px; font-size: 10px; font-weight: 700; }
+        .pill.green { color: #087b53; background: #e3f7ed; }
+        .pill.blue { color: #3457d5; background: #edf2ff; }
+        .pill.orange { color: #a65c00; background: #fff3dc; }
+        .pill.red { color: #bf3547; background: #ffebee; }
+
+        /* Login */
+        #loginPage { min-height: 100vh; display: grid; grid-template-columns: 1.08fr .92fr; background: white; }
+        .login-art {
+            padding: 48px 8%; display: flex; flex-direction: column; justify-content: space-between;
+            color: white; position: relative; overflow: hidden;
+            background: linear-gradient(145deg, #172554, #233b86 60%, #3457d5);
+        }
+        .login-art:before, .login-art:after {
+            content: ""; position: absolute; border-radius: 50%; border: 1px solid #ffffff1c;
+            width: 500px; height: 500px; right: -170px; top: 18%;
+        }
+        .login-art:after { width: 350px; height: 350px; right: -95px; top: 28%; }
+        .login-art .brand { color: white; position: relative; z-index: 1; }
+        .login-art .brand-mark { background: white; color: var(--blue); }
+        .art-content { max-width: 530px; position: relative; z-index: 1; }
+        .art-content h1 { font-size: clamp(32px, 4vw, 48px); line-height: 1.18; letter-spacing: -1.7px; margin: 15px 0; }
+        .art-content p { color: #d9e2ff; font-size: 14px; line-height: 1.9; max-width: 420px; }
+        .art-stats { display: flex; gap: 35px; margin-top: 36px; }
+        .art-stats strong { display: block; font-size: 22px; margin-bottom: 5px; }
+        .art-stats span { color: #cbd7ff; font-size: 11px; }
+        .login-footer { color: #bdcaff; font-size: 11px; position: relative; z-index: 1; }
+        .login-side { display: grid; place-items: center; padding: 35px 24px; }
+        .login-form { width: 100%; max-width: 400px; }
+        .login-form h2 { font-size: 28px; letter-spacing: -.8px; margin: 12px 0 8px; }
+        .login-form .intro { color: var(--muted); margin-bottom: 30px; line-height: 1.7; }
+        .field { margin: 17px 0; }
+        .field label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 12px; }
+        .field input, .field select {
+            width: 100%; border: 1px solid #dce2ec; border-radius: 9px; padding: 13px;
+            background: white; outline: none; color: var(--text);
+        }
+        .field input:focus, .field select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px #3457d51a; }
+        .login-submit { width: 100%; padding: 14px; margin-top: 7px; }
+        .demo-note { padding: 12px; margin-top: 20px; background: #f3f6ff; border-radius: 9px; color: #56658b; line-height: 1.6; font-size: 11px; }
+        .password-wrap { position: relative; }
+        .password-wrap input { padding-right: 55px; }
+        .show-pass { position: absolute; right: 12px; top: 12px; background: none; border: 0; color: var(--blue); font-size: 11px; font-weight: 700; }
+
+        /* Application layout */
+        #appPage { min-height: 100vh; }
+        .sidebar {
+            position: fixed; top: 0; bottom: 0; left: 0; width: 242px; background: white;
+            border-right: 1px solid var(--border); padding: 24px 16px; display: flex; flex-direction: column; z-index: 10;
+        }
+        .sidebar .brand { padding: 0 8px 27px; font-size: 14px; }
+        .sidebar .brand-mark { width: 35px; height: 35px; }
+        .org-label { padding: 12px; background: #f6f8fc; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 25px; }
+        .org-label small { color: var(--muted); display: block; font-size: 10px; margin-bottom: 6px; }
+        .org-label strong { font-size: 12px; }
+        .nav-heading { color: #9aa5b7; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; padding: 0 12px; margin-bottom: 9px; }
+        .nav-item {
+            display: flex; align-items: center; gap: 12px; padding: 12px; margin: 2px 0;
+            border-radius: 9px; color: #64748b; font-weight: 600; cursor: pointer;
+        }
+        .nav-item:hover { background: #f6f8fc; color: var(--blue); }
+        .nav-item.active { background: var(--blue-light); color: var(--blue); }
+        .nav-icon { width: 20px; text-align: center; font-size: 16px; }
+        .sidebar-bottom { margin-top: auto; }
+        .help-card { background: #f5f7ff; padding: 14px; border-radius: 11px; margin: 15px 0; }
+        .help-card strong { display: block; margin: 7px 0; font-size: 12px; }
+        .help-card p { font-size: 11px; color: var(--muted); line-height: 1.6; margin: 0 0 10px; }
+        .user-mini { border-top: 1px solid var(--border); padding: 17px 5px 0; display: flex; align-items: center; gap: 10px; }
+        .avatar { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; color: #3457d5; background: #e8edff; font-weight: 800; flex-shrink: 0; }
+        .user-mini strong { display: block; font-size: 12px; margin-bottom: 4px; }
+        .user-mini small { color: var(--muted); font-size: 10px; }
+
+        .main { margin-left: 242px; min-height: 100vh; }
+        .topbar {
+            background: white; border-bottom: 1px solid var(--border); padding: 0 30px;
+            height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 15px;
+        }
+        .breadcrumb { color: var(--muted); font-size: 11px; margin-bottom: 5px; }
+        .top-title { font-size: 16px; font-weight: 800; }
+        .top-actions { display: flex; align-items: center; gap: 12px; }
+        .icon-btn { width: 37px; height: 37px; background: white; border: 1px solid var(--border); border-radius: 10px; position: relative; }
+        .dot { position: absolute; width: 7px; height: 7px; border-radius: 50%; background: #ed5364; top: 7px; right: 7px; border: 1px solid white; }
+        .top-user { display: flex; align-items: center; gap: 9px; padding-left: 13px; border-left: 1px solid var(--border); }
+        .top-user strong { display: block; font-size: 11px; margin-bottom: 4px; }
+        .top-user small { color: var(--muted); font-size: 10px; }
+        .content { padding: 28px 30px 45px; max-width: 1600px; margin: auto; }
+        .welcome-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; margin-bottom: 24px; }
+        .welcome-row h1 { margin: 0 0 8px; font-size: 24px; letter-spacing: -.8px; }
+        .welcome-row p { margin: 0; color: var(--muted); line-height: 1.6; }
+        .filters { display: flex; align-items: center; gap: 10px; }
+        .select-filter { border: 1px solid var(--border); background: white; padding: 10px 12px; border-radius: 9px; color: var(--text); max-width: 100%; }
+        .grid { display: grid; gap: 17px; }
+        .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 22px; }
+        .card { background: white; border: 1px solid var(--border); border-radius: 13px; padding: 20px; min-width: 0; }
+        .stat-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .stat-label { color: var(--muted); font-size: 11px; font-weight: 600; }
+        .stat-icon { width: 37px; height: 37px; border-radius: 10px; display: grid; place-items: center; font-size: 17px; }
+        .stat-value { font-size: clamp(20px, 2vw, 27px); font-weight: 800; letter-spacing: -.8px; margin: 16px 0 9px; overflow-wrap: anywhere; }
+        .stat-foot { color: var(--muted); font-size: 10px; }
+        .stat-foot strong { color: var(--green); }
+        .two-col { grid-template-columns: minmax(0, 1.4fr) minmax(280px, .9fr); margin-bottom: 20px; }
+        .card-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
+        .card-heading h3 { margin: 0; font-size: 14px; }
+        .card-heading p { margin: 5px 0 0; color: var(--muted); font-size: 11px; }
+        .link-btn { background: none; border: 0; color: var(--blue); font-weight: 700; font-size: 11px; white-space: nowrap; }
+        .chart { height: 190px; display: flex; align-items: flex-end; gap: 15px; padding: 15px 5px 0; border-bottom: 1px solid var(--border); }
+        .chart-column { flex: 1; height: 100%; display: flex; align-items: center; flex-direction: column; justify-content: flex-end; gap: 8px; min-width: 0; }
+        .bar-pair { height: 155px; display: flex; align-items: flex-end; gap: 4px; width: 100%; justify-content: center; }
+        .bar { width: 30%; max-width: 22px; border-radius: 5px 5px 0 0; min-height: 7px; }
+        .bar.rev { background: #4567df; }
+        .bar.exp { background: #c7d2fe; }
+        .chart-column small { color: var(--muted); font-size: 10px; }
+        .legend { display: flex; gap: 15px; font-size: 10px; color: var(--muted); }
+        .legend span { display: flex; align-items: center; gap: 6px; }
+        .legend i { display: inline-block; height: 8px; width: 8px; border-radius: 3px; background: #4567df; }
+        .legend i.exp { background: #c7d2fe; }
+        .activity { display: flex; align-items: flex-start; gap: 11px; padding: 13px 0; border-bottom: 1px solid #f0f2f7; }
+        .activity:last-child { border-bottom: 0; }
+        .activity-icon { height: 34px; width: 34px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; }
+        .activity strong { display: block; font-size: 11px; margin: 2px 0 5px; }
+        .activity p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+        .activity time { margin-left: auto; color: #98a2b3; font-size: 10px; white-space: nowrap; }
+        .table-card { padding: 0; overflow: hidden; margin-bottom: 20px; }
+        .table-head { padding: 20px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .table-head h3 { margin: 0; font-size: 14px; }
+        .table-wrap { overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; min-width: 600px; text-align: left; }
+        th { padding: 12px 20px; background: #f8f9fc; color: #7c8799; font-size: 10px; text-transform: uppercase; letter-spacing: .5px; }
+        td { padding: 15px 20px; border-bottom: 1px solid #eff2f6; font-size: 11px; white-space: nowrap; }
+        tr:last-child td { border-bottom: 0; }
+        .unit-name { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+        .unit-icon { width: 33px; height: 33px; border-radius: 9px; background: #edf2ff; display: grid; place-items: center; font-size: 15px; }
+        .money-green { color: var(--green); font-weight: 700; }
+        .money-red { color: var(--red); font-weight: 700; }
+        .action-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .action-card { display: flex; align-items: center; gap: 13px; text-align: left; }
+        .action-card .stat-icon { width: 43px; height: 43px; flex-shrink: 0; }
+        .action-card strong { display: block; font-size: 12px; margin-bottom: 6px; }
+        .action-card p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+        .unit-banner { padding: 19px 21px; background: linear-gradient(110deg, #1c3273, #3457d5); color: white; border-radius: 13px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+        .unit-banner h2 { margin: 0 0 6px; font-size: 19px; }
+        .unit-banner p { margin: 0; color: #dce4ff; font-size: 11px; }
+        .unit-banner .select-filter { border: 0; }
+        .page-placeholder { background: white; border: 1px solid var(--border); border-radius: 13px; padding: 55px 20px; text-align: center; }
+        .page-placeholder .big-icon { font-size: 38px; }
+        .page-placeholder h2 { font-size: 20px; }
+        .page-placeholder p { color: var(--muted); line-height: 1.8; max-width: 460px; margin: 0 auto 20px; }
+        .toast { position: fixed; bottom: 24px; right: 24px; padding: 13px 18px; border-radius: 10px; color: white; background: #172554; box-shadow: 0 8px 30px #17255430; z-index: 99; }
+
+        @@media (max-width: 1100px) {
+            .sidebar { width: 210px; }
+            .main { margin-left: 210px; }
+            .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .two-col { grid-template-columns: 1fr; }
+            .content { padding: 24px 20px; }
+            .topbar { padding: 0 20px; }
+        }
+        @@media (max-width: 720px) {
+            #loginPage { grid-template-columns: 1fr; }
+            .login-art { display: none; }
+            .login-side { min-height: 100vh; padding: 25px; }
+            .sidebar { width: 65px; padding: 18px 8px; }
+            .sidebar .brand { padding: 0 6px 25px; }
+            .sidebar .brand span, .org-label, .nav-heading, .nav-item .nav-text, .help-card, .user-mini .user-details { display: none; }
+            .nav-item { justify-content: center; padding: 13px 4px; }
+            .nav-icon { font-size: 18px; }
+            .user-mini { justify-content: center; padding: 15px 0 0; }
+            .main { margin-left: 65px; }
+            .topbar { padding: 0 12px; height: 65px; }
+            .top-user .user-details { display: none; }
+            .content { padding: 20px 12px; }
+            .welcome-row { flex-direction: column; }
+            .welcome-row h1 { font-size: 21px; }
+            .filters { width: 100%; flex-wrap: wrap; }
+            .stats-grid { gap: 10px; }
+            .card { padding: 14px; }
+            .stat-value { font-size: 20px; }
+            .action-grid { grid-template-columns: 1fr; }
+            .unit-banner { align-items: flex-start; flex-direction: column; }
+            .chart { gap: 6px; }
+            .activity time { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<section id="loginPage">
+    <div class="login-art">
+        <div class="brand"><div class="brand-mark">E</div><span>Edutech <span style="font-weight:400">Finance</span></span></div>
+        <div class="art-content">
+            <div class="eyebrow" style="color:#b9c8ff">FINANCIAL CONTROL, SIMPLIFIED</div>
+            <h1>One platform.<br>Every unit.<br>Complete clarity.</h1>
+            <p>Manage cash, monitor bank accounts, track expenses and make confident financial decisions — all from one centralized platform.</p>
+            <div class="art-stats">
+                <div><strong>05</strong><span>Business units</span></div>
+                <div><strong>01</strong><span>Unified platform</span></div>
+                <div><strong>100%</strong><span>Visibility</span></div>
+            </div>
+        </div>
+        <div class="login-footer">© 2026 Edutech Solutions · Cash Management System</div>
+    </div>
+
+    <div class="login-side">
+        <form class="login-form" id="loginForm">
+            <div class="brand" style="margin-bottom:30px"><div class="brand-mark">E</div><span>Edutech Finance</span></div>
+            <div class="eyebrow">WELCOME BACK</div>
+            <h2>Sign in to your account</h2>
+            <p class="intro">Enter your credentials to access your financial workspace.</p>
+
+            <div class="field">
+                <label for="email">Email address</label>
+                <input id="email" type="email" placeholder="name@edutech.com" value="admin@edutech.com" required>
+            </div>
+            <div class="field">
+                <label for="password">Password</label>
+                <div class="password-wrap">
+                    <input id="password" type="password" placeholder="Enter your password" value="Demo@123" required>
+                    <button type="button" class="show-pass" onclick="togglePassword()">Show</button>
+                </div>
+            </div>
+            <div class="field">
+                <label for="demoRole">Preview dashboard as</label>
+                <select id="demoRole">
+                    <option value="super">Super Owner</option>
+                    <option value="owner" selected>Organization Owner</option>
+                    <option value="single">Single Unit User</option>
+                    <option value="multi">Multiple-Unit Accountant</option>
+                </select>
+            </div>
+            <button class="btn login-submit" type="submit">Sign in to Dashboard &nbsp; →</button>
+            <div class="demo-note"><strong>Prototype preview</strong><br>Use the role selector to preview each access level. These are sample screens; authentication and financial data are not connected to a database yet.</div>
+        </form>
+    </div>
+</section>
+
+<!-- APPLICATION -->
+<section id="appPage" class="hidden">
+    <aside class="sidebar">
+        <div class="brand"><div class="brand-mark">E</div><span>Edutech Finance</span></div>
+        <div class="org-label"><small id="orgLabelSmall">CURRENT ORGANIZATION</small><strong id="orgLabelName">Edutech Solutions</strong></div>
+        <div class="nav-heading">Workspace</div>
+        <nav id="mainNav">
+            <div class="nav-item active" data-page="dashboard" onclick="showPage('dashboard',this)"><span class="nav-icon">▦</span><span class="nav-text">Dashboard</span></div>
+            <div class="nav-item" data-page="transactions" onclick="showPage('transactions',this)"><span class="nav-icon">↔</span><span class="nav-text">Transactions</span></div>
+            <div class="nav-item" data-page="accounts" onclick="showPage('accounts',this)"><span class="nav-icon">▤</span><span class="nav-text">Accounts</span></div>
+            <div class="nav-item" data-page="bills" onclick="showPage('bills',this)"><span class="nav-icon">▧</span><span class="nav-text">Bills & Payments</span></div>
+            <div class="nav-item" data-page="reports" onclick="showPage('reports',this)"><span class="nav-icon">▥</span><span class="nav-text">Reports</span></div>
+            <div class="nav-item" data-page="requests" onclick="showPage('requests',this)"><span class="nav-icon">◷</span><span class="nav-text">Deletion Requests</span></div>
+        </nav>
+        <div class="sidebar-bottom">
+            <div class="nav-heading">Administration</div>
+            <div class="nav-item" data-page="users" onclick="showPage('users',this)"><span class="nav-icon">♙</span><span class="nav-text">Users & Access</span></div>
+            <div class="nav-item" data-page="settings" onclick="showPage('settings',this)"><span class="nav-icon">⚙</span><span class="nav-text">Settings</span></div>
+            <div class="help-card"><span>💡</span><strong>Need assistance?</strong><p>Review your financial activity and account access.</p><button class="btn btn-outline btn-sm" onclick="notify('Support preview opened')">Get Help</button></div>
+            <div class="user-mini">
+                <div class="avatar" id="sideAvatar">HA</div>
+                <div class="user-details"><strong id="sideName">Hafsa Admin</strong><small id="sideRole">Organization Owner</small></div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main">
+        <header class="topbar">
+            <div>
+                <div class="breadcrumb">Edutech Finance / <span id="breadcrumbPage">Dashboard</span></div>
+                <div class="top-title" id="topPageTitle">Dashboard Overview</div>
+            </div>
+            <div class="top-actions">
+                <button class="icon-btn" title="Notifications" onclick="notify('You are all caught up!')">♧<span class="dot"></span></button>
+                <div class="top-user">
+                    <div class="avatar" id="topAvatar">HA</div>
+                    <div class="user-details"><strong id="topName">Hafsa Admin</strong><small id="topRole">Organization Owner</small></div>
+                </div>
+                <button class="btn btn-outline btn-sm" onclick="logout()">Log out</button>
+            </div>
+        </header>
+
+        <div class="content">
+            <div id="dashboardView"></div>
+            <div id="genericView" class="hidden"></div>
+        </div>
+    </main>
+</section>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+    const units = [
+        { name: "School", icon: "🎓", revenue: 1850000, expenses: 1120000, balance: 730000, bills: 85000, users: 4 },
+        { name: "College", icon: "🏫", revenue: 1420000, expenses: 930000, balance: 490000, bills: 62000, users: 3 },
+        { name: "BS Program", icon: "📚", revenue: 2200000, expenses: 1450000, balance: 750000, bills: 120000, users: 5 },
+        { name: "Training Center", icon: "💻", revenue: 860000, expenses: 510000, balance: 350000, bills: 45000, users: 2 },
+        { name: "Evening Academy", icon: "🌙", revenue: 640000, expenses: 420000, balance: 220000, bills: 30000, users: 2 }
+    ];
+
+    const organizations = [
+        { name: "Edutech Solutions", units: 5, status: "Active", users: 16 },
+        { name: "Edutech Learning Hub", units: 3, status: "Active", users: 9 },
+        { name: "Future Skills Institute", units: 2, status: "Pending Setup", users: 4 }
+    ];
+
+    let currentRole = "owner";
+    let selectedUnit = "School";
+    let activePage = "dashboard";
+    let currentUser = "Hafsa Admin";
+
+    const roleNames = {
+        super: "Super Owner",
+        owner: "Organization Owner",
+        single: "Single Unit User",
+        multi: "Multiple-Unit Accountant"
+    };
+
+    const money = n => "Rs. " + Math.round(n).toLocaleString("en-PK");
+    const getUnit = name => units.find(u => u.name === name) || units[0];
+
+    function togglePassword() {
+        const p = document.getElementById("password");
+        const b = document.querySelector(".show-pass");
+        p.type = p.type === "password" ? "text" : "password";
+        b.textContent = p.type === "password" ? "Show" : "Hide";
+    }
+
+    document.getElementById("loginForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+     currentRole = document.getElementById("demoRole").value;
+currentUser = document.getElementById("email").value.split("@@")[0]
+    .replace(/[._-]/g, " ")
+    .replace(/\b\w/g, c => c.toUpperCase()) || "Demo User";
+        selectedUnit = "School";
+        activePage = "dashboard";
+        document.getElementById("loginPage").classList.add("hidden");
+        document.getElementById("appPage").classList.remove("hidden");
+        setupUser();
+        renderDashboard();
+        showPage("dashboard", document.querySelector('[data-page="dashboard"]'));
+    });
+
+    function setupUser() {
+        const role = roleNames[currentRole];
+        const initials = currentUser.split(" ").map(w => w[0]).join("").substring(0, 2).toUpperCase();
+        document.getElementById("sideAvatar").textContent = initials;
+        document.getElementById("topAvatar").textContent = initials;
+        document.getElementById("sideName").textContent = currentUser;
+        document.getElementById("topName").textContent = currentUser;
+        document.getElementById("sideRole").textContent = role;
+        document.getElementById("topRole").textContent = role;
+
+        const org = currentRole === "super" ? "Platform Administration" : "Edutech Solutions";
+        document.getElementById("orgLabelName").textContent = org;
+        document.getElementById("orgLabelSmall").textContent = currentRole === "super" ? "SYSTEM ACCESS" : "CURRENT ORGANIZATION";
+
+        document.querySelectorAll(".nav-item[data-page='users'], .nav-item[data-page='settings'], .nav-item[data-page='requests']").forEach(el => {
+            el.classList.toggle("hidden", currentRole === "single" || currentRole === "multi");
+        });
+
+        document.querySelectorAll(".nav-item[data-page='transactions'], .nav-item[data-page='accounts'], .nav-item[data-page='bills']").forEach(el => {
+            el.classList.toggle("hidden", currentRole === "super");
+        });
+
+        document.querySelectorAll(".nav-item[data-page='reports']").forEach(el => el.classList.toggle("hidden", currentRole === "super"));
+    }
+
+    function logout() {
+        document.getElementById("appPage").classList.add("hidden");
+        document.getElementById("loginPage").classList.remove("hidden");
+        document.getElementById("password").value = "Demo@123";
+    }
+
+    function notify(message) {
+        const toast = document.getElementById("toast");
+        toast.textContent = message;
+        toast.classList.remove("hidden");
+        window.clearTimeout(window.toastTimer);
+        window.toastTimer = window.setTimeout(() => toast.classList.add("hidden"), 2500);
+    }
+
+    function statCard(label, value, icon, color, foot) {
+        return `<div class="card">
+            <div class="stat-top"><span class="stat-label">${label}</span><span class="stat-icon" style="background:${color}">${icon}</span></div>
+            <div class="stat-value">${value}</div><div class="stat-foot">${foot}</div>
+        </div>`;
+    }
+
+    function unitTable(list) {
+        return `<div class="card table-card">
+            <div class="table-head"><div><h3>Unit-wise Financial Overview</h3><p class="muted" style="margin:6px 0 0">Consolidated snapshot across business units</p></div>
+            <button class="link-btn" onclick="notify('Full unit report preview')">View report →</button></div>
+            <div class="table-wrap"><table><thead><tr><th>Business Unit</th><th>Revenue</th><th>Expenses</th><th>Net Balance</th><th>Outstanding Bills</th><th>Status</th></tr></thead><tbody>
+            ${list.map(u => `<tr>
+                <td><div class="unit-name"><span class="unit-icon">${u.icon}</span>${u.name}</div></td>
+                <td>${money(u.revenue)}</td><td>${money(u.expenses)}</td>
+                <td class="money-green">${money(u.balance)}</td><td>${money(u.bills)}</td>
+                <td><span class="pill green">● Active</span></td>
+            </tr>`).join("")}
+            </tbody></table></div>
+        </div>`;
+    }
+
+    function chartCard() {
+        const vals = [
+            [48, 30], [64, 39], [55, 34], [79, 45], [67, 41], [91, 55]
+        ];
+        const months = ["May", "Jun", "Jul", "Aug", "Sep", "Oct"];
+        return `<div class="card">
+            <div class="card-heading"><div><h3>Cash Flow Overview</h3><p>Revenue vs. expenses · Last 6 months</p></div><span class="pill blue">2026</span></div>
+            <div class="legend"><span><i></i>Revenue</span><span><i class="exp"></i>Expenses</span></div>
+            <div class="chart">${vals.map((v, i) => `<div class="chart-column"><div class="bar-pair"><div class="bar rev" style="height:${v[0]}%"></div><div class="bar exp" style="height:${v[1]}%"></div></div><small>${months[i]}</small></div>`).join("")}</div>
+        </div>`;
+    }
+
+    function activityCard() {
+        return `<div class="card">
+            <div class="card-heading"><div><h3>Recent Activity</h3><p>Latest financial updates</p></div><button class="link-btn" onclick="showPage('transactions')">View all</button></div>
+            <div class="activity"><div class="activity-icon" style="background:#e4f8ee">↙</div><div><strong>Fee collection recorded</strong><p>School · Monthly tuition fees</p></div><time>10:42 AM</time></div>
+            <div class="activity"><div class="activity-icon" style="background:#fff0dc">↗</div><div><strong>Utility bill payment</strong><p>College · Electricity expense</p></div><time>09:30 AM</time></div>
+            <div class="activity"><div class="activity-icon" style="background:#edf2ff">⇄</div><div><strong>Account transfer recorded</strong><p>BS Program · Bank transfer</p></div><time>Yesterday</time></div>
+            <div class="activity"><div class="activity-icon" style="background:#ffebee">◷</div><div><strong>Bill awaiting payment</strong><p>Training Center · Internet bill</p></div><time>Yesterday</time></div>
+        </div>`;
+    }
+
+    function ownerDashboard() {
+        const rev = units.reduce((s, u) => s + u.revenue, 0);
+        const exp = units.reduce((s, u) => s + u.expenses, 0);
+        const balance = units.reduce((s, u) => s + u.balance, 0);
+        const bills = units.reduce((s, u) => s + u.bills, 0);
+        return `<div class="welcome-row"><div><h1>Good morning, ${currentUser} 👋</h1><p>Here is what's happening across your organization today.</p></div>
+            <div class="filters"><select class="select-filter" id="periodFilter" onchange="notify('Period changed to '+this.value)"><option>This Month</option><option>Last Month</option><option>This Quarter</option><option>This Year</option></select>
+            <button class="btn" onclick="notify('Add transaction preview opened')">＋ New Transaction</button></div></div>
+            <div class="grid stats-grid">
+                ${statCard("PERIOD REVENUE", money(rev), "↙", "#e2f8ed", '<strong>↑ 12.8%</strong> vs previous period')}
+                ${statCard("PERIOD EXPENSES", money(exp), "↗", "#fff0dd", '<strong style="color:#d97706">↑ 4.2%</strong> vs previous period')}
+                ${statCard("ALL-TIME NET BALANCE", money(balance), "▤", "#e9edff", "Across all five business units")}
+                ${statCard("OUTSTANDING BILLS", money(bills), "◷", "#ffebee", '<span style="color:#d84c5b">3 overdue</span> · Included in total')}
+            </div>
+            <div class="grid two-col">${chartCard()}${activityCard()}</div>
+            ${unitTable(units)}
+            <div class="grid action-grid">
+                <div class="card action-card"><span class="stat-icon" style="background:#fff0dd">◷</span><div><strong>Action Required</strong><p>3 overdue bills · 2 deletion requests</p></div><button class="link-btn" onclick="showPage('requests')">Review →</button></div>
+                <div class="card action-card"><span class="stat-icon" style="background:#e9edff">♙</span><div><strong>User Management</strong><p>Manage roles and unit permissions</p></div><button class="link-btn" onclick="showPage('users')">Manage →</button></div>
+                <div class="card action-card"><span class="stat-icon" style="background:#e2f8ed">▥</span><div><strong>Financial Reports</strong><p>Review unit-wise performance</p></div><button class="link-btn" onclick="showPage('reports')">Explore →</button></div>
+            </div>`;
+    }
+
+    function singleUnitDashboard() {
+        const u = getUnit("School");
+        return `<div class="welcome-row"><div><h1>Welcome, ${currentUser} 👋</h1><p>Your assigned unit's financial snapshot at a glance.</p></div>
+            <div class="filters"><select class="select-filter" disabled><option>School · Assigned Unit</option></select><select class="select-filter" onchange="notify('Period changed to '+this.value)"><option>This Month</option><option>Last Month</option><option>This Quarter</option></select></div></div>
+            <div class="unit-banner"><div><div class="eyebrow" style="color:#c9d5ff">YOUR ASSIGNED UNIT</div><h2>${u.icon} ${u.name}</h2><p>Access is limited to your assigned unit.</p></div><span class="pill green">● Authorized Access</span></div>
+            <div class="grid stats-grid">
+                ${statCard("PERIOD REVENUE", money(u.revenue), "↙", "#e2f8ed", '<strong>↑ 8.4%</strong> vs previous period')}
+                ${statCard("PERIOD EXPENSES", money(u.expenses), "↗", "#fff0dd", "Recorded unit expenses")}
+                ${statCard("NET BALANCE", money(u.balance), "▤", "#e9edff", "Current unit balance")}
+                ${statCard("OUTSTANDING BILLS", money(u.bills), "◷", "#ffebee", "Includes partial payments")}
+            </div>
+            <div class="grid two-col">${chartCard()}${activityCard()}</div>
+            <div class="card"><div class="card-heading"><div><h3>Unit Access Summary</h3><p>Information for your assigned workspace</p></div><span class="pill blue">Single Unit User</span></div>
+                <div class="activity"><div class="activity-icon" style="background:#e4f8ee">✓</div><div><strong>Unit access assigned</strong><p>You can view financial records for School only.</p></div></div>
+                <div class="activity"><div class="activity-icon" style="background:#edf2ff">↗</div><div><strong>Financial entries</strong><p>New entries update unit totals immediately.</p></div></div>
+                <div class="activity"><div class="activity-icon" style="background:#fff0dc">🔒</div><div><strong>Protected records</strong><p>Financial record deletion requires an owner-approved request.</p></div></div>
+            </div>`;
+    }
+
+    function multiUnitDashboard() {
+        const allowed = units.filter(u => ["School", "College", "Training Center"].includes(u.name));
+        const u = getUnit(selectedUnit);
+        return `<div class="welcome-row"><div><h1>Welcome, ${currentUser} 👋</h1><p>Manage financial activity for your authorized units.</p></div>
+            <div class="filters"><span class="pill blue">3 Assigned Units</span><select class="select-filter" onchange="selectedUnit=this.value;renderDashboard()" id="multiUnitSelect">${allowed.map(x => `<option ${x.name === selectedUnit ? "selected" : ""}>${x.name}</option>`).join("")}</select></div></div>
+            <div class="unit-banner"><div><div class="eyebrow" style="color:#c9d5ff">CURRENT WORKSPACE</div><h2>${u.icon} ${u.name}</h2><p>Dashboard reflects the currently selected authorized unit.</p></div><span class="pill green">● Authorized Access</span></div>
+            <div class="grid stats-grid">
+                ${statCard("PERIOD REVENUE", money(u.revenue), "↙", "#e2f8ed", '<strong>↑ 8.4%</strong> vs previous period')}
+                ${statCard("PERIOD EXPENSES", money(u.expenses), "↗", "#fff0dd", "Recorded unit expenses")}
+                ${statCard("NET BALANCE", money(u.balance), "▤", "#e9edff", "Current unit balance")}
+                ${statCard("OUTSTANDING BILLS", money(u.bills), "◷", "#ffebee", "Remaining unpaid amount")}
+            </div>
+            <div class="grid two-col">${chartCard()}${activityCard()}</div>
+            <div class="card"><div class="card-heading"><div><h3>Your Authorized Units</h3><p>Switch between assigned units only</p></div></div>
+                <div class="grid action-grid">${allowed.map(x => `<div class="card action-card" style="background:${x.name===selectedUnit?'#f3f6ff':'white'};border-color:${x.name===selectedUnit?'#aabaff':'var(--border)'}"><span class="stat-icon" style="background:#e9edff">${x.icon}</span><div><strong>${x.name}</strong><p>Net balance: ${money(x.balance)}</p></div><button class="link-btn" onclick="selectedUnit='${x.name}';renderDashboard()">Open →</button></div>`).join("")}</div>
+            </div>`;
+    }
+
+    function superDashboard() {
+        return `<div class="welcome-row"><div><h1>Platform Overview 👋</h1><p>Manage organizations and their initial owner assignments.</p></div><button class="btn" onclick="notify('Create organization form preview opened')">＋ Create Organization</button></div>
+            <div class="grid stats-grid">
+                ${statCard("TOTAL ORGANIZATIONS", "03", "▦", "#e9edff", "Across the platform")}
+                ${statCard("ACTIVE ORGANIZATIONS", "02", "✓", "#e2f8ed", "Operating normally")}
+                ${statCard("TOTAL BUSINESS UNITS", "10", "🏫", "#fff0dd", "Across all organizations")}
+                ${statCard("REGISTERED USERS", "29", "♙", "#f2e8ff", "All platform accounts")}
+            </div>
+            <div class="card table-card">
+                <div class="table-head"><div><h3>Organization Management</h3><p class="muted" style="margin:6px 0 0">Create organizations and assign their initial owner.</p></div><button class="btn btn-sm" onclick="notify('Create organization form preview opened')">＋ New Organization</button></div>
+                <div class="table-wrap"><table><thead><tr><th>Organization</th><th>Business Units</th><th>Users</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+                ${organizations.map((o, i) => `<tr><td><div class="unit-name"><span class="unit-icon">🏢</span>${o.name}</div></td><td>${o.units}</td><td>${o.users}</td><td><span class="pill ${o.status === 'Active' ? 'green' : 'orange'}">${o.status}</span></td><td><button class="link-btn" onclick="notify('Organization details preview: ${o.name}')">View details →</button></td></tr>`).join("")}
+                </tbody></table></div>
+            </div>
+            <div class="grid two-col">
+                <div class="card"><div class="card-heading"><div><h3>Platform Administration</h3><p>Super Owner responsibilities</p></div><span class="stat-icon" style="background:#edf2ff">🔐</span></div>
+                    <div class="activity"><div class="activity-icon" style="background:#e2f8ed">＋</div><div><strong>Create an organization</strong><p>Set up an organization and its profile.</p></div></div>
+                    <div class="activity"><div class="activity-icon" style="background:#edf2ff">♙</div><div><strong>Assign initial Organization Owner</strong><p>Designate the person who will administer that organization.</p></div></div>
+                    <div class="activity"><div class="activity-icon" style="background:#fff0dc">▦</div><div><strong>Monitor platform</strong><p>Review organization status and user counts.</p></div></div>
+                </div>
+                <div class="card"><div class="card-heading"><div><h3>Access Boundaries</h3><p>Separation between platform and organization</p></div></div>
+                    <div class="activity"><div class="activity-icon" style="background:#e2f8ed">✓</div><div><strong>Super Owner</strong><p>Creates and oversees organizations.</p></div></div>
+                    <div class="activity"><div class="activity-icon" style="background:#edf2ff">🔒</div><div><strong>Organization Owner</strong><p>Manages users and units within their own organization.</p></div></div>
+                    <div class="activity"><div class="activity-icon" style="background:#fff0dc">🛡</div><div><strong>Unit-level users</strong><p>Only access assigned and authorized units.</p></div></div>
+                </div>
+            </div>`;
+    }
+
+    function renderDashboard() {
+        const target = document.getElementById("dashboardView");
+        if (currentRole === "super") target.innerHTML = superDashboard();
+        else if (currentRole === "single") target.innerHTML = singleUnitDashboard();
+        else if (currentRole === "multi") target.innerHTML = multiUnitDashboard();
+        else target.innerHTML = ownerDashboard();
+        document.getElementById("genericView").classList.add("hidden");
+        target.classList.remove("hidden");
+    }
+
+    function showPage(page, element) {
+        activePage = page;
+        document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+        const selected = element || document.querySelector(`.nav-item[data-page="${page}"]`);
+        if (selected) selected.classList.add("active");
+
+        const titles = {
+            dashboard: "Dashboard Overview", transactions: "Transactions",
+            accounts: "Cash & Bank Accounts", bills: "Bills & Payments",
+            reports: "Financial Reports", requests: "Deletion Requests",
+            users: "Users & Access", settings: "Organization Settings"
+        };
+        document.getElementById("breadcrumbPage").textContent = titles[page] || "Dashboard";
+        document.getElementById("topPageTitle").textContent = titles[page] || "Dashboard Overview";
+
+        if (page === "dashboard") {
+            renderDashboard();
+            return;
+        }
+        document.getElementById("dashboardView").classList.add("hidden");
+        const view = document.getElementById("genericView");
+        view.classList.remove("hidden");
+
+        const configs = {
+            transactions: ["↔", "Financial Transactions", "Record and review income, expenses and transfers for authorized units.", "＋ Add Transaction", "Income, expense and transfer entries will appear here in the connected application."],
+            accounts: ["▤", "Cash & Bank Accounts", "Manage cash accounts, bank accounts and account transfers.", "＋ Add Account", "Your cash and bank accounts will be listed here."],
+            bills: ["▧", "Bills & Payments", "Track upcoming, unpaid, partially paid and overdue bills.", "＋ Add Bill", "Outstanding bills show the remaining unpaid amount. Overdue bills are included in the outstanding total."],
+            reports: ["▥", "Financial Reports", "Review revenue, expenses, balances and unit-wise performance.", "Generate Report", "Select a reporting period and report type to preview financial performance."],
+            requests: ["◷", "Deletion Requests", "Review requests to delete financial records submitted by users.", "Review Requests", "Pending deletion requests require Organization Owner approval. Financial records cannot be directly deleted by accountants."],
+            users: ["♙", "Users & Access", "Create users and assign organization roles, units and permissions.", "＋ Add User", "Manage Single Unit Users and Multiple-Unit Accountants. Access is restricted to assigned units."],
+            settings: ["⚙", "Organization Settings", "Configure your organization's profile and financial preferences.", "Edit Settings", "Organization profile · Financial preferences · Categories · Notifications · Audit Log"]
+        };
+        const c = configs[page] || configs.dashboard;
+
+        if (currentRole === "super" && page !== "dashboard") {
+            view.innerHTML = `<div class="page-placeholder"><div class="big-icon">🔐</div><h2>Platform Administration</h2><p>Super Owner manages organizations from the platform dashboard. Organization-specific financial screens are not part of this role's workspace.</p><button class="btn" onclick="showPage('dashboard')">Back to Organizations</button></div>`;
+            return;
+        }
+
+        view.innerHTML = `<div class="welcome-row"><div><h1>${c[1]}</h1><p>${c[2]}</p></div><button class="btn" onclick="notify('${c[3]} preview opened')">${c[3]}</button></div>
+            <div class="page-placeholder"><div class="big-icon">${c[0]}</div><h2>${c[1]}</h2><p>${c[4]}</p><button class="btn btn-outline" onclick="showPage('dashboard')">← Back to Dashboard</button></div>`;
+    }
+</script>
+</body>
+</html>

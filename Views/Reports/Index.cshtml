@@ -1,438 +1,258 @@
 @{
-    ViewData["Title"] = "Financial Reports";
+    ViewData["Title"] = "Reports";
 }
 
-<div class="page-header">
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 pb-2 border-bottom">
     <div>
-        <h1>Financial Reports</h1>
-        <p>Review financial performance across your organizational units.</p>
+        <h1 class="h4 mb-1 text-dark fw-bold">Reports</h1>
+        <p class="text-muted small mb-0">Financial statements and period breakdown.</p>
     </div>
 
-    <button type="button" class="btn btn-primary" onclick="exportReport()">
-        ↓ Export CSV
+    <button type="button" class="btn btn-outline-primary btn-sm px-3 d-inline-flex align-items-center gap-2" onclick="exportReportCsv()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <span>Export CSV</span>
     </button>
 </div>
 
-<section class="panel">
-    <div class="panel-header">
+<!-- Filter Toolbar -->
+<div class="card border-0 shadow-sm" style="border-radius:12px;">
+    <div class="card-body p-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-12 col-sm-6 col-md-4">
+                <label for="reportPeriod" class="form-label small fw-semibold text-muted mb-1">Reporting Period</label>
+                <select id="reportPeriod" class="form-select form-select-sm" style="border-radius:8px;">
+                    <option value="month">This Month</option>
+                    <option value="lastMonth">Last Month</option>
+                    <option value="year">This Year</option>
+                    <option value="all">All Time</option>
+                </select>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4">
+                <label for="reportUnit" class="form-label small fw-semibold text-muted mb-1">Organizational Unit</label>
+                <select id="reportUnit" class="form-select form-select-sm" style="border-radius:8px;">
+                    @{
+                        var repUnits = (ViewBag.AvailableUnits as List<string>) ?? (ViewData["AllowedUnits"] as List<string>) ?? new List<string>();
+                    }
+                    @if (repUnits.Count > 1)
+                    {
+                        <option value="all">All Authorized Units</option>
+                    }
+                    @foreach (var u in repUnits)
+                    {
+                        <option value="@u">@u</option>
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3">
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center justify-content-between text-muted small mb-2">
+                    <span>Period Revenue</span>
+                    <div class="p-2 rounded" style="background:#ecfdf5;color:#059669;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                    </div>
+                </div>
+                <div class="h3 fw-bold mb-1 text-dark" id="reportRevenue">Rs. 0</div>
+                <span class="small text-muted">Income in selected period</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center justify-content-between text-muted small mb-2">
+                    <span>Period Expenses</span>
+                    <div class="p-2 rounded" style="background:#fef2f2;color:#dc2626;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </div>
+                </div>
+                <div class="h3 fw-bold mb-1 text-dark" id="reportExpenses">Rs. 0</div>
+                <span class="small text-muted">Expenses in selected period</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center justify-content-between text-muted small mb-2">
+                    <span>All-Time Net Balance</span>
+                    <div class="p-2 rounded" style="background:#eff6ff;color:#2563eb;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                    </div>
+                </div>
+                <div class="h3 fw-bold mb-1 text-dark" id="reportNet">Rs. 0</div>
+                <span class="small text-muted">Cumulative net liquidity</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center justify-content-between text-muted small mb-2">
+                    <span>Outstanding Liabilities</span>
+                    <div class="p-2 rounded" style="background:#fffbeb;color:#d97706;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                    </div>
+                </div>
+                <div class="h3 fw-bold mb-1 text-dark" id="reportOutstanding">Rs. 0</div>
+                <span class="small text-muted">Unpaid vendor commitments</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Annual Monthly Flow Chart -->
+<div class="card border-0 shadow-sm" style="border-radius:12px;">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap">
         <div>
-            <h3>Report filters</h3>
-            <p>Select a reporting period and organizational unit.</p>
+            <h6 class="card-title mb-0 fw-bold text-dark">Cash Flow Distribution</h6>
+        </div>
+        <div class="d-flex gap-3 small text-muted">
+            <span class="d-inline-flex align-items-center gap-1">
+                <span style="width:10px;height:10px;background:#356ae6;border-radius:2px;display:inline-block;"></span> Revenue
+            </span>
+            <span class="d-inline-flex align-items-center gap-1">
+                <span style="width:10px;height:10px;background:#f59e0b;border-radius:2px;display:inline-block;"></span> Expenses
+            </span>
         </div>
     </div>
-
-    <div class="transaction-toolbar">
-        <select id="reportPeriod" class="form-select">
-            <option value="month">This Month</option>
-            <option value="lastMonth">Last Month</option>
-            <option value="year">This Year</option>
-            <option value="all">All Time</option>
-        </select>
-
-        <select id="reportUnit" class="form-select">
-            <option value="all">All Organizational Units</option>
-            <option value="School">School</option>
-            <option value="College">College</option>
-            <option value="BS Program">BS Program</option>
-            <option value="Training Center">Training Center</option>
-            <option value="Evening Academy">Evening Academy</option>
-        </select>
+    <div class="card-body p-4">
+        <div id="monthlyChart" style="display:grid; gap:14px;"></div>
     </div>
-</section>
+</div>
 
-<section class="summary-grid">
-    <article class="summary-card">
-        <div class="summary-card-top">
-            <span>Period Revenue</span>
-            <span class="summary-icon">↗</span>
-        </div>
-        <h2 id="reportRevenue">Rs. 0</h2>
-        <p>Total income for the selected period</p>
-    </article>
-
-    <article class="summary-card">
-        <div class="summary-card-top">
-            <span>Period Expenses</span>
-            <span class="summary-icon">↘</span>
-        </div>
-        <h2 id="reportExpenses">Rs. 0</h2>
-        <p>Total expenses for the selected period</p>
-    </article>
-
-    <article class="summary-card">
-        <div class="summary-card-top">
-            <span>Net Balance</span>
-            <span class="summary-icon">=</span>
-        </div>
-        <h2 id="reportNet">Rs. 0</h2>
-        <p>All-time income minus all-time expenses</p>
-    </article>
-
-    <article class="summary-card">
-        <div class="summary-card-top">
-            <span>Outstanding Bills</span>
-            <span class="summary-icon">!</span>
-        </div>
-        <h2 id="reportOutstanding">Rs. 0</h2>
-        <p>Remaining unpaid amount, including overdue bills</p>
-    </article>
-</section>
-
-<section class="panel">
-    <div class="panel-header">
-        <div>
-            <h3>Monthly financial overview</h3>
-            <p>Revenue versus expenses for the current year.</p>
-        </div>
+<!-- Unit Breakdown Table -->
+<div class="card border-0 shadow-sm" style="border-radius:12px;">
+    <div class="card-header bg-white border-bottom py-3">
+        <h6 class="card-title mb-0 fw-bold text-dark">Unit Performance Breakdown</h6>
     </div>
-
-    <div id="monthlyChart"
-         style="display:grid; gap:18px; padding:12px 0;">
-    </div>
-
-    <div style="display:flex; gap:20px; flex-wrap:wrap; margin-top:20px;">
-        <span style="display:flex; align-items:center; gap:8px;">
-            <span style="width:12px;height:12px;border-radius:3px;background:#2563eb;display:inline-block;"></span>
-            Revenue
-        </span>
-        <span style="display:flex; align-items:center; gap:8px;">
-            <span style="width:12px;height:12px;border-radius:3px;background:#f59e0b;display:inline-block;"></span>
-            Expenses
-        </span>
-    </div>
-</section>
-
-<section class="panel">
-    <div class="panel-header">
-        <div>
-            <h3>Organizational unit breakdown</h3>
-            <p>Compare financial performance across all five units.</p>
-        </div>
-    </div>
-
     <div class="table-responsive">
-        <table class="table align-middle">
-            <thead>
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light small text-uppercase text-muted">
                 <tr>
-                    <th>Organizational Unit</th>
-                    <th>Revenue</th>
-                    <th>Expenses</th>
-                    <th>Net Balance</th>
-                    <th>Outstanding Bills</th>
+                    <th class="ps-3">Organizational Unit</th>
+                    <th>Period Revenue</th>
+                    <th>Period Expenses</th>
+                    <th>Operating Net</th>
+                    <th class="text-end pe-3">Outstanding Bills</th>
                 </tr>
             </thead>
-            <tbody id="unitReportRows"></tbody>
+            <tbody id="unitReportRows">
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">Loading unit data...</td>
+                </tr>
+            </tbody>
         </table>
     </div>
-
-    <p class="preview-note">
-        Demo report: figures are sample data for interface review only.
-        CSV export contains the figures currently displayed in the report.
-    </p>
-</section>
+</div>
 
 @section Scripts {
-    <script>
-        // DEMO DATA ONLY — no database connection yet.
-        // Dates use YYYY-MM-DD format.
+<script>
+(() => {
+    let currentTransactions = [];
 
-        const reportTransactions = [
-            { date: "2026-10-02", unit: "School", type: "Revenue", amount: 180000 },
-            { date: "2026-10-04", unit: "School", type: "Expense", amount: 65000 },
-            { date: "2026-10-05", unit: "College", type: "Revenue", amount: 240000 },
-            { date: "2026-10-06", unit: "College", type: "Expense", amount: 95000 },
-            { date: "2026-10-07", unit: "BS Program", type: "Revenue", amount: 320000 },
-            { date: "2026-10-08", unit: "BS Program", type: "Expense", amount: 125000 },
-            { date: "2026-10-09", unit: "Training Center", type: "Revenue", amount: 110000 },
-            { date: "2026-10-10", unit: "Training Center", type: "Expense", amount: 42000 },
-            { date: "2026-10-11", unit: "Evening Academy", type: "Revenue", amount: 85000 },
-            { date: "2026-10-12", unit: "Evening Academy", type: "Expense", amount: 30000 },
+    const money = value =>
+        "Rs. " + Math.round(value || 0).toLocaleString("en-PK");
 
-            { date: "2026-09-05", unit: "School", type: "Revenue", amount: 160000 },
-            { date: "2026-09-08", unit: "School", type: "Expense", amount: 60000 },
-            { date: "2026-09-06", unit: "College", type: "Revenue", amount: 220000 },
-            { date: "2026-09-09", unit: "College", type: "Expense", amount: 90000 },
-            { date: "2026-09-07", unit: "BS Program", type: "Revenue", amount: 300000 },
-            { date: "2026-09-10", unit: "BS Program", type: "Expense", amount: 118000 },
-            { date: "2026-09-12", unit: "Training Center", type: "Revenue", amount: 95000 },
-            { date: "2026-09-15", unit: "Training Center", type: "Expense", amount: 40000 },
-            { date: "2026-09-14", unit: "Evening Academy", type: "Revenue", amount: 75000 },
-            { date: "2026-09-18", unit: "Evening Academy", type: "Expense", amount: 28000 },
+    async function loadReportData() {
+        const period = document.getElementById("reportPeriod").value;
+        const unit = document.getElementById("reportUnit").value;
 
-            { date: "2026-04-10", unit: "School", type: "Revenue", amount: 140000 },
-            { date: "2026-05-10", unit: "School", type: "Revenue", amount: 150000 },
-            { date: "2026-06-10", unit: "College", type: "Revenue", amount: 190000 },
-            { date: "2026-07-10", unit: "College", type: "Expense", amount: 70000 },
-            { date: "2026-08-10", unit: "BS Program", type: "Revenue", amount: 250000 },
-            { date: "2026-08-12", unit: "BS Program", type: "Expense", amount: 100000 }
-        ];
+        try {
+            const res = await fetch(`/api/reports/data?period=${encodeURIComponent(period)}&unit=${encodeURIComponent(unit)}`);
+            if (!res.ok) throw new Error("Failed to fetch reports");
+            const data = await res.json();
 
-        const reportBills = [
-            { unit: "School", amount: 30000, paid: 10000, dueDate: "2026-10-20" },
-            { unit: "College", amount: 50000, paid: 20000, dueDate: "2026-10-08" },
-            { unit: "BS Program", amount: 40000, paid: 0, dueDate: "2026-10-25" },
-            { unit: "Training Center", amount: 15000, paid: 5000, dueDate: "2026-10-18" },
-            { unit: "Evening Academy", amount: 12000, paid: 0, dueDate: "2026-10-05" }
-        ];
+            document.getElementById("reportRevenue").textContent = money(data.periodRevenue);
+            document.getElementById("reportExpenses").textContent = money(data.periodExpenses);
+            document.getElementById("reportNet").textContent = money(data.allTimeNet);
+            document.getElementById("reportOutstanding").textContent = money(data.totalOutstanding);
 
-        const reportUnits = [
-            "School",
-            "College",
-            "BS Program",
-            "Training Center",
-            "Evening Academy"
-        ];
+            currentTransactions = data.transactions || [];
 
-        function reportMoney(amount) {
-            return "Rs. " + Math.round(amount).toLocaleString("en-PK");
-        }
-
-        function getPeriodTransactions() {
-            const period = document.getElementById("reportPeriod").value;
-            const selectedUnit = document.getElementById("reportUnit").value;
-            const now = new Date();
-
-            return reportTransactions.filter(transaction => {
-                const date = new Date(transaction.date + "T12:00:00");
-
-                const matchesUnit =
-                    selectedUnit === "all" || transaction.unit === selectedUnit;
-
-                let matchesPeriod = true;
-
-                if (period === "month") {
-                    matchesPeriod =
-                        date.getFullYear() === now.getFullYear() &&
-                        date.getMonth() === now.getMonth();
-                } else if (period === "lastMonth") {
-                    const lastMonth = new Date(
-                        now.getFullYear(),
-                        now.getMonth() - 1,
-                        1
-                    );
-
-                    matchesPeriod =
-                        date.getFullYear() === lastMonth.getFullYear() &&
-                        date.getMonth() === lastMonth.getMonth();
-                } else if (period === "year") {
-                    matchesPeriod = date.getFullYear() === now.getFullYear();
-                }
-
-                return matchesUnit && matchesPeriod;
-            });
-        }
-
-        function getUnitFigures(unit) {
-            const selectedUnit = document.getElementById("reportUnit").value;
-            const matchesUnit = selectedUnit === "all" || selectedUnit === unit;
-
-            const transactions = reportTransactions.filter(transaction =>
-                transaction.unit === unit
-            );
-
-            const revenue = transactions
-                .filter(transaction => transaction.type === "Revenue")
-                .reduce((sum, transaction) => sum + transaction.amount, 0);
-
-            const expenses = transactions
-                .filter(transaction => transaction.type === "Expense")
-                .reduce((sum, transaction) => sum + transaction.amount, 0);
-
-            const outstanding = reportBills
-                .filter(bill => bill.unit === unit)
-                .reduce((sum, bill) =>
-                    sum + Math.max(0, bill.amount - bill.paid), 0);
-
-            return {
-                unit,
-                revenue: matchesUnit ? revenue : 0,
-                expenses: matchesUnit ? expenses : 0,
-                net: matchesUnit ? revenue - expenses : 0,
-                outstanding: matchesUnit ? outstanding : 0
-            };
-        }
-
-        function renderReport() {
-            const transactions = getPeriodTransactions();
-
-            const periodRevenue = transactions
-                .filter(item => item.type === "Revenue")
-                .reduce((sum, item) => sum + item.amount, 0);
-
-            const periodExpenses = transactions
-                .filter(item => item.type === "Expense")
-                .reduce((sum, item) => sum + item.amount, 0);
-
-            const selectedUnit = document.getElementById("reportUnit").value;
-
-            const visibleUnits = selectedUnit === "all"
-                ? reportUnits
-                : [selectedUnit];
-
-            const allFigures = visibleUnits.map(getUnitFigures);
-
-            // Net balance is based on all-time revenue and expenses.
-            const allTimeNet = allFigures.reduce((sum, item) => sum + item.net, 0);
-
-            // Outstanding includes partially paid and overdue bills.
-            // Overdue is not counted separately, so there is no double-counting.
-            const outstanding = allFigures.reduce(
-                (sum, item) => sum + item.outstanding, 0
-            );
-
-            document.getElementById("reportRevenue").textContent =
-                reportMoney(periodRevenue);
-
-            document.getElementById("reportExpenses").textContent =
-                reportMoney(periodExpenses);
-
-            document.getElementById("reportNet").textContent =
-                reportMoney(allTimeNet);
-
-            document.getElementById("reportOutstanding").textContent =
-                reportMoney(outstanding);
-
-            renderMonthlyChart();
-            renderUnitTable();
-        }
-
-        function renderMonthlyChart() {
-            const selectedUnit = document.getElementById("reportUnit").value;
-            const currentYear = new Date().getFullYear();
-
-            const months = [
-                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-            ];
-
-            const monthlyData = months.map((month, index) => {
-                const transactions = reportTransactions.filter(item => {
-                    const date = new Date(item.date + "T12:00:00");
-
-                    return date.getFullYear() === currentYear &&
-                        date.getMonth() === index &&
-                        (selectedUnit === "all" || item.unit === selectedUnit);
-                });
-
-                return {
-                    month,
-                    revenue: transactions
-                        .filter(item => item.type === "Revenue")
-                        .reduce((sum, item) => sum + item.amount, 0),
-                    expenses: transactions
-                        .filter(item => item.type === "Expense")
-                        .reduce((sum, item) => sum + item.amount, 0)
-                };
-            });
-
-            const maxValue = Math.max(
-                1,
-                ...monthlyData.map(item => Math.max(item.revenue, item.expenses))
-            );
-
-            document.getElementById("monthlyChart").innerHTML =
-                monthlyData.map(item => `
-                    <div style="display:grid;grid-template-columns:36px minmax(0,1fr);gap:12px;align-items:center;">
-                        <span style="font-size:13px;color:#64748b;">${item.month}</span>
-                        <div style="display:grid;gap:5px;">
-                            <div title="Revenue: ${reportMoney(item.revenue)}"
-                                 style="height:12px;width:${item.revenue / maxValue * 100}%;min-width:${item.revenue ? 3 : 0}px;background:#2563eb;border-radius:4px;">
+            // Monthly chart
+            const chartElem = document.getElementById("monthlyChart");
+            if (chartElem && data.months) {
+                const maxVal = Math.max(1, ...data.months.flatMap(m => [m.revenue, m.expenses]));
+                chartElem.innerHTML = data.months.map(m => `
+                    <div style="display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;align-items:center;">
+                        <span class="small text-muted" style="font-size:12px;font-weight:600;">${m.month}</span>
+                        <div style="display:grid;gap:4px;">
+                            <div title="Revenue: ${money(m.revenue)}"
+                                 style="height:10px;width:${Math.max(2, (m.revenue / maxVal) * 100)}%;background:#356ae6;border-radius:3px;">
                             </div>
-                            <div title="Expenses: ${reportMoney(item.expenses)}"
-                                 style="height:12px;width:${item.expenses / maxValue * 100}%;min-width:${item.expenses ? 3 : 0}px;background:#f59e0b;border-radius:4px;">
+                            <div title="Expenses: ${money(m.expenses)}"
+                                 style="height:10px;width:${Math.max(2, (m.expenses / maxVal) * 100)}%;background:#f59e0b;border-radius:3px;">
                             </div>
                         </div>
                     </div>
                 `).join("");
+            }
+
+            // Unit breakdown
+            const tbody = document.getElementById("unitReportRows");
+            if (tbody && data.unitBreakdown) {
+                if (data.unitBreakdown.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">No unit metrics recorded.</td></tr>';
+                } else {
+                    tbody.innerHTML = data.unitBreakdown.map(u => {
+                        const isPos = u.net >= 0;
+                        const netColor = isPos ? "text-success fw-semibold" : "text-danger fw-semibold";
+                        return `
+                            <tr>
+                                <td class="ps-3 fw-semibold text-dark">${u.unit}</td>
+                                <td>${money(u.revenue)}</td>
+                                <td>${money(u.expenses)}</td>
+                                <td class="${netColor}">${money(u.net)}</td>
+                                <td class="text-end pe-3">${money(u.outstanding)}</td>
+                            </tr>
+                        `;
+                    }).join("");
+                }
+            }
+        } catch (err) {
+            console.error("Report data load error:", err);
+        }
+    }
+
+    window.exportReportCsv = function() {
+        if (!currentTransactions || currentTransactions.length === 0) {
+            alert("No transaction records available for export.");
+            return;
         }
 
-        function renderUnitTable() {
-            const selectedUnit = document.getElementById("reportUnit").value;
+        const headers = ["Date", "Unit", "Type", "Description", "Amount"];
+        const rows = currentTransactions.map(t => [
+            t.date,
+            `"${(t.unit || '').replace(/"/g, '""')}"`,
+            t.type,
+            `"${(t.description || '').replace(/"/g, '""')}"`,
+            t.amount
+        ]);
 
-            const visibleUnits = selectedUnit === "all"
-                ? reportUnits
-                : [selectedUnit];
+        const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `financial_report_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
-            document.getElementById("unitReportRows").innerHTML =
-                visibleUnits.map(unit => {
-                    const figures = getUnitFigures(unit);
+    document.getElementById("reportPeriod").addEventListener("change", loadReportData);
+    document.getElementById("reportUnit").addEventListener("change", loadReportData);
 
-                    return `
-                        <tr>
-                            <td><strong>${unit}</strong></td>
-                            <td>${reportMoney(figures.revenue)}</td>
-                            <td>${reportMoney(figures.expenses)}</td>
-                            <td>${reportMoney(figures.net)}</td>
-                            <td>${reportMoney(figures.outstanding)}</td>
-                        </tr>
-                    `;
-                }).join("");
-        }
-
-        function exportReport() {
-            const transactions = getPeriodTransactions();
-
-            const rows = [
-                ["Financial Report"],
-                ["Period", document.getElementById("reportPeriod").selectedOptions[0].text],
-                ["Unit", document.getElementById("reportUnit").value],
-                [],
-                ["Organizational Unit", "All-Time Revenue", "All-Time Expenses", "All-Time Net Balance", "Outstanding Bills"]
-            ];
-
-            const selectedUnit = document.getElementById("reportUnit").value;
-
-            const visibleUnits = selectedUnit === "all"
-                ? reportUnits
-                : [selectedUnit];
-
-            visibleUnits.forEach(unit => {
-                const figures = getUnitFigures(unit);
-
-                rows.push([
-                    unit,
-                    figures.revenue,
-                    figures.expenses,
-                    figures.net,
-                    figures.outstanding
-                ]);
-            });
-
-            rows.push([]);
-            rows.push(["Selected Period Transactions"]);
-            rows.push(["Date", "Unit", "Type", "Amount"]);
-
-            transactions.forEach(item => {
-                rows.push([item.date, item.unit, item.type, item.amount]);
-            });
-
-            const csv = rows.map(row =>
-                row.map(value => {
-                    const text = String(value ?? "");
-                    return '"' + text.replace(/"/g, '""') + '"';
-                }).join(",")
-            ).join("\r\n");
-
-            const blob = new Blob(["\uFEFF" + csv], {
-                type: "text/csv;charset=utf-8;"
-            });
-
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-
-            link.href = url;
-            link.download = "financial-report.csv";
-            link.click();
-
-            URL.revokeObjectURL(url);
-        }
-
-        document.getElementById("reportPeriod")
-            .addEventListener("change", renderReport);
-
-        document.getElementById("reportUnit")
-            .addEventListener("change", renderReport);
-
-        renderReport();
-    </script>
+    loadReportData();
+})();
+</script>
 }
