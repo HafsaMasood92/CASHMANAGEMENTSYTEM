@@ -160,7 +160,7 @@ For local evaluation, the following pre-configured roles are available:
 | Role | Email | Password | Scope & Responsibilities |
 | :--- | :--- | :--- | :--- |
 | **Super Admin** | `admin@edutech.com` | `Demo@123` | Platform oversight, onboarding new organizations, managing Organization Admins. |
-| **Organization Admin** | `owner@edutech.com` | `Demo@123` | Full administration of Edutech Solutions, units, accounts, and deletion approval. |
+
 
 ---
 
